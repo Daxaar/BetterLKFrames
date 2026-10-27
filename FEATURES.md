@@ -20,7 +20,7 @@ This is an iterative client-test release, not complete BetterBlizzFrames parity.
 | Hide PvP icons / combat flash | Implemented for registered unit frames; does not hide every combat-related UI element |
 | Cast timers and scale | Implemented for native player/pet/target/focus cast bars |
 | Party cast bars | Implemented using locally visible legacy cast/channel data |
-| Aura countdown / important border | Implemented on native player/target/focus aura buttons |
+| Aura countdown / important border | Implemented on native player/target/focus aura buttons, with optional live visual-only samples |
 | Aura expiry warning | Implemented; configurable 0–10 seconds, not pandemic semantics |
 | Aura cooldown spirals | Adds missing spirals; preserves native spirals |
 | Aura layout | Small configurable 0–12 px target/focus root-row offset; no custom filtering/sorting/resizing/reordering |

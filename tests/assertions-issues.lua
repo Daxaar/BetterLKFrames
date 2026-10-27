@@ -48,7 +48,7 @@ BetterLKFramesDB={version=3,healthHeight=22,profiles={Legacy={version=3,healthHe
 BetterLKFramesCharDB={};a:InitSettings();a:Apply()
 local account=a.accountDB
 local entries=a:ListProfiles()
-ok(#entries==1 and entries[1].scope=="account" and entries[1].name=="Legacy","legacy profile safely retained as account-wide")
+ok(#entries==2 and entries[1].scope=="account" and entries[1].name=="Legacy","legacy profile safely retained as account-wide")
 ok(a:Profile("load","Legacy") and a.db.healthHeight==25 and a.db.auraTimers,"legacy profile loads retained settings")
 a:Set("healthHeight",26);a:InitSettings()
 ok(a.db.healthHeight==26 and BetterLKFramesCharDB.activeProfile.name=="Legacy","selection and edits survive initialization")
@@ -61,17 +61,17 @@ a:Set("healthHeight",29)
 local characterSave=BetterLKFramesCharDB
 local list=a:ListProfiles();local characterLabel
 for _,entry in ipairs(list) do if entry.scope=="character" then characterLabel=entry.label end end
-ok(#list==3 and characterLabel:find(UnitName("player"),1,true)==1,"eligible list distinguishes scopes and prefixes character owner")
+ok(#list==4 and characterLabel:find(UnitName("player"),1,true)==1,"eligible list distinguishes scopes and prefixes character owner")
 ok(not a:Profile("save","Centre","character"),"duplicate creation cannot silently overwrite an existing profile")
 BetterLKFramesCharDB={};a:InitSettings()
-list=a:ListProfiles();ok(#list==2,"another character cannot list private profiles")
+list=a:ListProfiles();ok(#list==3,"another character cannot list private profiles")
 ok(not a:Profile("load","Centre","character"),"another character cannot select a private profile")
 ok(a:Profile("load","Centre","account") and a.db.healthHeight==29,"another character may select account profile")
 BetterLKFramesCharDB=characterSave;a:InitSettings()
 ok(a:Profile("load","Centre","character") and a.db.healthHeight==28,"original character retains its private profile")
 a:RefreshOptions();ok(a.profileSelector.menuText==a:ActiveProfileLabel(),"dropdown displays actual active profile")
 local menu=OpenTestMenu(a.profileSelector)
-ok(#menu==3,"selection dropdown lists every eligible profile")
+ok(#menu==4,"selection dropdown lists every eligible profile")
 local pick
 for _,entry in ipairs(menu) do if entry.text=="Legacy (account)" then pick=entry end end
 pick.func();ok(BetterLKFramesCharDB.activeProfile.name=="Legacy" and a.db.healthHeight==26,"dropdown selection applies the correct profile")

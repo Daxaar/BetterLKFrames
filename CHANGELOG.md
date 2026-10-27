@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.3-dev — awaiting owner in-game acceptance
+
+- Refs #4: Keep original shared account settings permanently selectable in the dropdown without copying over them.
+- Refs #2, #4, #5: Extend the bright native button treatment to Frames and Profiles action buttons.
+- Refs #5: Dismiss reset confirmation before applying layout work; Escape from unlock mode locks frames and reopens Frames settings on the following update.
+- Refs #8: Add an unchecked, runtime-only Show test auras preview with isolated labelled player/target/focus samples and shared live rendering. Clean up on page/window exit, combat, disable and logout.
+- Refs #9: Use the client's circular class-portrait atlas, preserving class coordinates and normal portrait restoration.
+- Refs #10: Suppress resting Zzz/glow while enabled, retain the native player level and restore Blizzard resting display when disabled.
+- Add popup/Escape lifecycle, default-profile preservation, preview isolation/cleanup and portrait/rest-badge regressions. In-game verification of this iteration remains pending.
+
+
 ## 0.2.2-dev — awaiting owner in-game acceptance
 
 - Refs #1: Disable all aura feature checkboxes and the aura gap on fresh settings; preserve existing preferences.

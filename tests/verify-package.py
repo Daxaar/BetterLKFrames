@@ -7,7 +7,7 @@ args=parser.parse_args()
 base=Path(__file__).resolve().parents[1]; addon=base;dist=base/'dist'
 dist.mkdir(exist_ok=True)
 files=sorted(list(addon.glob('*.lua'))+list(addon.glob('*.toc'))+[addon/n for n in ['README.md','FEATURES.md','PROVENANCE.md','CHANGELOG.md','LICENSE','CONTRIBUTING.md','DEVELOPMENT.md']]+list((addon/'Media').glob('*.tga')))
-expected={'BetterLKFrames.toc','Core.lua','Profiles.lua','Windows.lua','AuraLayout.lua','Style.lua','Snapping.lua','Options.lua','README.md','FEATURES.md','PROVENANCE.md','CHANGELOG.md','LICENSE','CONTRIBUTING.md','DEVELOPMENT.md'}
+expected={'BetterLKFrames.toc','Core.lua','Preview.lua','Profiles.lua','Windows.lua','AuraLayout.lua','Style.lua','Snapping.lua','Options.lua','README.md','FEATURES.md','PROVENANCE.md','CHANGELOG.md','LICENSE','CONTRIBUTING.md','DEVELOPMENT.md'}
 assert {p.name for p in files if p.parent==addon}==expected
 text=(addon/'BetterLKFrames.toc').read_text()
 assert '## Interface: 30300' in text
@@ -58,6 +58,7 @@ with zipfile.ZipFile(path,'w',zipfile.ZIP_DEFLATED) as z:
 with zipfile.ZipFile(path) as z:
     assert z.testzip() is None
     assert set(z.namelist())==set(contents)
+    assert all(not name.lower().endswith(('.png','.jpg','.jpeg')) and '/screenshots/' not in name.lower() for name in z.namelist()), 'Reference screenshots must never enter addon ZIPs'
     for entry,data in contents.items():assert z.read(entry)==data
 sha=hashlib.sha256(path.read_bytes()).hexdigest()
 (path.with_suffix('.zip.sha256')).write_text(sha+'  '+path.name+'\n')

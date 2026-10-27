@@ -18,7 +18,7 @@ ok(a.frames.PartyMemberFrame1.health.height==12,"secondary bars retain native he
 ok(a.frames.PartyMemberFrame1.health.text.text=="80%","secondary health text fits narrow bars")
 a:Set("bigBars",false);ok(e.health.height==12 and e.power.height==12,"normal bar geometry option")
 a:Set("bigBars",true)
-a:Set("classPortraits",true);ok(PlayerPortrait.texture:find("CharacterCreate")~=nil,"class portrait option")
+a:Set("classPortraits",true);ok(PlayerPortrait.texture:find("UI%-Classes%-Circles")~=nil,"class portrait option")
 a:Set("classPortraits",false);ok(PlayerPortrait.texture=="portrait:player","portrait restored")
 COMBAT=true;a:Set("healthHeight",27);ok(a.pending and e.health.height==22,"combat layout change deferred")
 event("UNIT_RAGE");a.scripts.OnUpdate(a,.3)

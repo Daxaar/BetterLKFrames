@@ -3,8 +3,8 @@
 from pathlib import Path
 import re,subprocess,sys
 ROOT=Path(__file__).resolve().parents[1]
-ROOT_FILES={'DEVELOPMENT.md','AGENTS.md','.gitignore','BetterLKFrames.toc','Core.lua','Profiles.lua','Style.lua','Windows.lua','AuraLayout.lua','Snapping.lua','Options.lua','README.md','FEATURES.md','PROVENANCE.md','CHANGELOG.md','LICENSE','CONTRIBUTING.md','requirements-dev.txt'}
-TEST_FILES={'tests/assertions-issues.lua','tests/mock-wow.lua','tests/assertions.lua','tests/assertions-v11.lua','tests/assertions-020.lua','tests/run-tests.py','tests/verify-package.py','tests/fixtures/cast-data-baseline.lua'}
+ROOT_FILES={'DEVELOPMENT.md','AGENTS.md','.gitignore','BetterLKFrames.toc','Core.lua','Preview.lua','Profiles.lua','Style.lua','Windows.lua','AuraLayout.lua','Snapping.lua','Options.lua','README.md','FEATURES.md','PROVENANCE.md','CHANGELOG.md','LICENSE','CONTRIBUTING.md','requirements-dev.txt'}
+TEST_FILES={'tests/assertions-followups.lua','tests/assertions-issues.lua','tests/mock-wow.lua','tests/assertions.lua','tests/assertions-v11.lua','tests/assertions-020.lua','tests/run-tests.py','tests/verify-package.py','tests/fixtures/cast-data-baseline.lua'}
 TOOL_FILES={'tools/generate-assets.py','tools/preview-assets.py','tools/check_repository.py'}
 MEDIA={'Media/'+p+'.tga' for p in ['HealthFlat','HealthGradient','HealthEdge','PowerFlat','PowerGradient','PowerEdge','ButtonEdge']}
 ALLOWED=ROOT_FILES|TEST_FILES|TOOL_FILES|MEDIA|{'.github/workflows/development.yml'}

@@ -4,12 +4,12 @@ Project: https://github.com/Daxaar/BetterLKFrames
 
 Blizzard unit-frame styling for the original **World of Warcraft 3.3.5a client, build 12340** (Interface 30300).
 
-Version **0.2.2-dev** is a development build awaiting client acceptance. It provides larger rounded health bars, class colours, dark decoration, movement/alignment tools and legacy-compatible cast/aura enhancements. It is an original implementation inspired by BetterBlizzFrames feature ideas, not an official port or a copy of that project's code/artwork. No server module is required.
+Version **0.2.3-dev** is a development build awaiting client acceptance. It provides larger rounded health bars, class colours, dark decoration, movement/alignment tools and legacy-compatible cast/aura enhancements. It is an original implementation inspired by BetterBlizzFrames feature ideas, not an official port or a copy of that project's code/artwork. No server module is required.
 
 ## Features
 
 - Rounded gradient player/target/focus health and power bars; independent heights, textures, scale and text options. Defaults: 22 px health and 11 px power.
-- Class-coloured player health/names, NPC reaction colours, optional class portraits and names above bars.
+- Class-coloured player health/names, NPC reaction colours, optional circular class portraits and names above bars. The player level stays visible while resting; the resting Zzz badge is suppressed while enabled.
 - Dark unit-frame, action-button, minimap and aura borders. Optional conservative rim shading on recognized Blizzard windows and a themed settings dialog.
 - Movable frames outside combat, screen-centred counted grid, edge/centre/mirrored alignment, optional grid snapping and Shift bypass.
 - Native cast timers, party cast bars, aura countdowns, important/expiry borders and a small target/focus aura gap.
@@ -33,11 +33,11 @@ Disable any previous version under a different addon name before enabling Better
 
 ## Movement and settings
 
-`/bf unlock` shows green drag handles and the optional grid; `/bf lock` hides them. Default grid spacing is 32 UI units, with major lines and signed counts every four squares. Explicit alignment takes precedence over optional grid-centre snapping. Hold **Shift when releasing** to bypass snapping. Position/scale changes wait until combat ends. Resolution/UI-scale changes can require repositioning or `/reload`.
+`/bf unlock` shows green drag handles and the optional grid; `/bf lock` hides them. Default grid spacing is 32 UI units, with major lines and signed counts every four squares. Explicit alignment takes precedence over optional grid-centre snapping. Hold **Shift when releasing** to bypass snapping. Press **Esc** while unlocked to lock frames and return to the Frames settings page. Position/scale changes wait until combat ends. Resolution/UI-scale changes can require repositioning or `/reload`.
 
-Appearance controls include decoration brightness, independent dark themes, class/name options and bar geometry. Casts / auras includes cast scale, expiry-warning seconds and a 0–12 px target/focus root-aura-row gap. On fresh settings, aura timers, added spirals, expiry warnings and dark aura borders are unchecked, and the gap is zero. Existing saved preferences and native cooldown spirals remain unchanged; the spiral option controls only added spirals.
+Appearance controls include decoration brightness, independent dark themes, class/name options and bar geometry. Casts / auras includes cast scale, expiry-warning seconds and a 0–12 px target/focus root-aura-row gap. On fresh settings, aura timers, added spirals, expiry warnings and dark aura borders are unchecked, and the gap is zero. Existing saved preferences and native cooldown spirals remain unchanged; the spiral option controls only added spirals. **Show test auras** temporarily displays labelled player/target/focus samples with live timer, spiral, border and gap controls. Samples appear below available unit/aura displays; unavailable target/focus contexts use a representative panel in settings. Preview is unchecked on each session and ends when changing page, closing settings, entering combat, logging out or disabling the addon. No real aura is added or altered.
 
-Under Profiles / help, use the dropdown to select account-wide profiles or this character's own profiles. Character entries have a character-name prefix and scope label; other characters' private entries are excluded. New profiles copy current settings and offer account or character scope. Existing named profiles remain account-wide without losing their settings. Selecting a named profile makes subsequent edits persistent in that profile, including frame movement; the selection survives reload/relog. Existing inactive names cannot be overwritten accidentally.
+The dropdown always includes **Shared account settings (default account-wide)** so you can return to the original shared configuration without overwriting it. Under Profiles / help, use the dropdown to select account-wide profiles or this character's own profiles. Character entries have a character-name prefix and scope label; other characters' private entries are excluded. New profiles copy current settings and offer account or character scope. Existing named profiles remain account-wide without losing their settings. Selecting a named profile makes subsequent edits persistent in that profile, including frame movement; the selection survives reload/relog. Existing inactive names cannot be overwritten accidentally.
 
 The existing unnamed account/character settings, copy, default, Blizzard and resume controls remain available. Resetting a named profile or character settings preserves other profiles; resetting unnamed account settings clears the account profile library.
 
@@ -56,7 +56,7 @@ On Frames, **Reset frames** asks for confirmation, restores all movable unit-fra
 ## Limits and known issues
 
 - **Pending:** dead targets can show overlapping duplicate “Dead” text. This development build does not address that report.
-- The changes for issues #1–#5 await owner in-game acceptance. See [development testing](DEVELOPMENT.md) in the source repository for decisions, build details and a focused checklist.
+- The changes for issues #1–#5 and #8–#10 await owner in-game acceptance. See [development testing](DEVELOPMENT.md) in the source repository for decisions, build details and a focused checklist.
 - Automated Lua 5.1 mocked-API tests pass, but cannot verify actual client rendering, combat taint or every vehicle/focus/arena transition. This development build still needs an in-game loading/settings check.
 - Window rim theming covers recognized narrow decorative texture regions only. It preserves parchment, map tiles, icons and text; some headers/tabs/custom frames remain unchanged or need visual refinement.
 - The custom cooldown restart defect was corrected in 0.2.0: unchanged auras no longer call SetCooldown every quarter-second. Confirm the reported extra flashing is resolved in your client. Native low-duration buff fading is preserved.

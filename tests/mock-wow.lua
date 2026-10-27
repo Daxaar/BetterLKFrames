@@ -66,7 +66,7 @@ function methods:StartMoving() geometry(self);self.moving=true end
 function methods:StopMovingOrSizing() geometry(self);self.moving=false end
 function methods:RegisterForDrag(...) self.drag={...} end
 function methods:Show() local was=self.shown;self.shown=true;if not was and self.scripts.OnShow then self.scripts.OnShow(self) end end
-function methods:Hide() self.shown=false;if self.scripts.OnHide then self.scripts.OnHide(self) end end
+function methods:Hide() local was=self.shown;self.shown=false;if was and self.scripts.OnHide then self.scripts.OnHide(self) end end
 function methods:IsShown() return self.shown end
 function methods:SetTexture(x) self.texture=x end
 function methods:SetTexCoord(...) self.texCoords={...} end
@@ -188,3 +188,34 @@ function CloseDropDownMenus() OPEN_MENU=nil end
 function methods:LockHighlight() self.highlightLocked=true end
 function methods:UnlockHighlight() self.highlightLocked=false end
 function methods:SetUserPlaced(value) geometry(self);self.userPlaced=value end
+
+-- Match the original StaticPopup lifecycle, including its truthy-return contract.
+function StaticPopup_Show(key)
+ LAST_POPUP=key
+ local dialog=CreateFrame("Frame",nil,UIParent);dialog.which=key;LAST_DIALOG=dialog
+ return dialog
+end
+function ClickTestPopup(dialog,index)
+ if not dialog:IsShown() then return end
+ local info=StaticPopupDialogs[dialog.which]
+ local callback=index==1 and info.OnAccept or info.OnCancel
+ local keep=callback and callback(dialog)
+ if not keep then dialog:Hide() end
+end
+function CloseTestSpecialWindows()
+ for _,name in ipairs(UISpecialFrames) do
+  local frame=_G[name];if frame and frame:IsShown() then frame:Hide() end
+ end
+end
+RESTING=false;VEHICLE=false
+PlayerRestIcon=CreateFrame("Texture","PlayerRestIcon",PlayerFrame)
+PlayerRestGlow=CreateFrame("Texture","PlayerRestGlow",PlayerFrame)
+PlayerAttackIcon=CreateFrame("Texture","PlayerAttackIcon",PlayerFrame)
+PlayerLevelText=CreateFrame("FontString","PlayerLevelText",PlayerFrame);PlayerLevelText:SetText("11")
+function IsResting() return RESTING end
+function UnitHasVehicleUI() return VEHICLE end
+function PlayerFrame_UpdateStatus()
+ if RESTING and not VEHICLE then PlayerRestIcon:Show();PlayerRestGlow:Show()
+ else PlayerRestIcon:Hide();PlayerRestGlow:Hide() end
+ if VEHICLE then PlayerLevelText:Hide() else PlayerLevelText:Show() end
+end

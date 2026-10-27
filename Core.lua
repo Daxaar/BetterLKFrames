@@ -104,7 +104,7 @@ local function portrait(entry)
         local _, class = UnitClass(unit)
         local coords = CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[class]
         if coords then
-            t:SetTexture("Interface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes")
+            t:SetTexture("Interface\\TargetingFrame\\UI-Classes-Circles")
             t:SetTexCoord(unpack(coords)); entry.classPortrait = true; return
         end
     end
@@ -203,6 +203,7 @@ function addon:Theme()
     if self.ThemeButtons then self:ThemeButtons() end
     if self.ThemeWindows then self:ThemeWindows() end
     if self.ThemeOptions then self:ThemeOptions() end
+    if self.UpdateRestBadge then self:UpdateRestBadge() end
     tint(MinimapBorder,self.db.enabled and self.db.darkMinimap)
     tint(MinimapBorderTop,self.db.enabled and self.db.darkMinimap)
     for _, n in ipairs({"CastingBarFrameBorder","PetCastingBarFrameBorder","TargetFrameSpellBarBorder","FocusFrameSpellBarBorder"}) do
@@ -246,6 +247,17 @@ function addon:SetUnlocked(value)
     if InCombatLockdown() then self:Message("Frame movement is unavailable during combat."); return false end
     if value and not self.db.enabled then self:Message("Enable the addon before moving frames.");return false end
     self.unlocked = value
+    if not self.unlockEscape then
+        local escape=CreateFrame("Frame","BetterLKFramesUnlockEscape",UIParent)
+        self.unlockEscape=escape;escape:Hide();escape:EnableMouse(false)
+        table.insert(UISpecialFrames,"BetterLKFramesUnlockEscape")
+        escape:SetScript("OnHide",function()
+            if addon.unlocked and not InCombatLockdown() then
+                addon:SetUnlocked(false);addon.reopenFrames=true
+            end
+        end)
+    end
+    if value then self.unlockEscape:Show() else self.unlockEscape:Hide() end
     for name,e in pairs(self.frames) do
         self:CreateMover(name,e)
         if value and e.owner:IsShown() then e.mover:Show() else e.mover:Hide() end
@@ -342,6 +354,7 @@ function addon:Apply()
     if self.unlocked and self.ShowMoveGuides then self:ShowMoveGuides(true) end
     self:Theme();self:SetupCasts();self:Refresh()
     if self.RefreshAuraOffset then self:RefreshAuraOffset() end
+    if self.UpdateTestAuras then self:UpdateTestAuras() end
     dirty = false
     return true
 end
@@ -439,7 +452,11 @@ local function auraButton(button,unit,index,debuff)
         f.nativeDuration=button.duration or (button:GetName() and _G[button:GetName().."Duration"])
         button.blkAura=f;addon.auras[button]=f
     end
-    local f=button.blkAura;local db=addon.db
+    addon:PaintAura(button,button.blkAura,n,duration,expiry,spellId,importantNames[n])
+end
+-- Shared appearance path for genuine auras and isolated visual-only samples.
+function addon:PaintAura(button,f,n,duration,expiry,spellId,important)
+    local db=self.db
     if addon.SkinAura then addon:SkinAura(button,f) end
     rememberAlpha(f.nativeDuration,db.enabled and db.auraTimers)
     local remaining=expiry and expiry-GetTime() or 0
@@ -457,7 +474,7 @@ local function auraButton(button,unit,index,debuff)
             if not f.cooldown:IsShown() then f.cooldown:Show() end
         else f.cooldown:Hide();f.cooldownExpiry=nil end
     end
-    if spellId and db.importantSpells[spellId] or importantNames[n] then
+    if spellId and db.importantSpells[spellId] or important then
         f.edge:SetBackdropBorderColor(1,0.8,0.1,1);f.edge:Show()
     elseif db.auraWarnings and duration and duration>0 and remaining>0 and remaining<=db.warningSeconds then
         f.edge:SetBackdropBorderColor(1,0.2,0.15,1);f.edge:Show()
@@ -515,25 +532,35 @@ addon:SetScript("OnEvent",function(self,event,arg1)
     elseif event=="PLAYER_LOGIN" then
         self:InitSettings();self:RegisterCommands();self:Apply();self:Message("Loaded. /bf for settings; /bf unlock to move frames.")
     elseif event=="PLAYER_REGEN_ENABLED" then self:Apply()
-    elseif event=="PLAYER_REGEN_DISABLED" and self.unlocked then
-        for _,e in pairs(self.frames) do if e.mover then e.mover:Hide() end end
-        self.unlocked=false
-        if self.ShowMoveGuides then self:ShowMoveGuides(false) end
+    elseif event=="PLAYER_REGEN_DISABLED" then
+        if self.SetTestAuras then self:SetTestAuras(false) end
+        if self.unlockEscape then self.unlockEscape:Hide() end
+        self.reopenFrames=nil
+        if self.unlocked then
+            for _,e in pairs(self.frames) do if e.mover then e.mover:Hide() end end
+            self.unlocked=false
+            if self.ShowMoveGuides then self:ShowMoveGuides(false) end
+        end
+    elseif event=="PLAYER_LOGOUT" then
+        if self.SetTestAuras then self:SetTestAuras(false) end
     elseif event=="ADDON_LOADED" and self.db then self:Apply() end
     dirty=true
 end)
 for _,ev in ipairs({"ADDON_LOADED","PLAYER_LOGIN","PLAYER_ENTERING_WORLD","PLAYER_REGEN_ENABLED","PLAYER_REGEN_DISABLED",
     "PLAYER_TARGET_CHANGED","PLAYER_FOCUS_CHANGED","UNIT_HEALTH","UNIT_MAXHEALTH","UNIT_MANA","UNIT_MAXMANA",
     "UNIT_RAGE","UNIT_FOCUS","UNIT_ENERGY","UNIT_HAPPINESS","UNIT_RUNIC_POWER",
-    "UNIT_DISPLAYPOWER","UNIT_FACTION","UNIT_NAME_UPDATE","UNIT_AURA","PARTY_MEMBERS_CHANGED","UNIT_PET"}) do addon:RegisterEvent(ev) end
+    "UNIT_DISPLAYPOWER","UNIT_FACTION","UNIT_NAME_UPDATE","UNIT_AURA","PARTY_MEMBERS_CHANGED","UNIT_PET","PLAYER_UPDATE_RESTING","UNIT_LEVEL","PLAYER_LOGOUT"}) do addon:RegisterEvent(ev) end
 addon:SetScript("OnUpdate",function(self,dt)
     if not self.db then return end
+    if self.reopenFrames and not InCombatLockdown() then
+        self.reopenFrames=nil;self:SelectOptionsPage(2);self.options:Show()
+    end
     elapsed=elapsed+dt;auraElapsed=auraElapsed+dt
     if elapsed>=0.1 then
         elapsed=0;if dirty then self:Refresh();dirty=false end
         self:UpdateCasts()
     end
-    if auraElapsed>=0.25 then auraElapsed=0;self:UpdateAuras();self:Theme() end
+    if auraElapsed>=0.25 then auraElapsed=0;self:UpdateAuras();self:Theme();if self.UpdateTestAuras then self:UpdateTestAuras() end end
 end)
 for _,fn in ipairs({"UnitFramePortrait_Update","PlayerFrame_UpdateArt","TargetFrame_CheckClassification"}) do
     if type(_G[fn])=="function" then hooksecurefunc(fn,function() dirty=true end) end

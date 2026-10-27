@@ -9,6 +9,7 @@ end
 local function button(parent,value,x,y,width,callback)
     local f=CreateFrame("Button",nil,parent,"UIPanelButtonTemplate")
     f:SetWidth(width or 110);f:SetHeight(24);f:SetPoint("TOPLEFT",x,y);f:SetText(value)
+    f.blkBrightButton=true
     f:SetScript("OnClick",callback);addon:RegisterOptionsArt(f);return f
 end
 function addon:BuildOptions()
@@ -29,14 +30,18 @@ function addon:BuildOptions()
     table.insert(UISpecialFrames,"BetterLKFramesOptions")
     local pages,controls={},{}
     self.optionsNavigation={}
+    self.optionsPages=pages
+    function addon:SelectOptionsPage(index)
+        for i,p in ipairs(pages) do
+            if i==index then p:Show();self.optionsNavigation[i]:LockHighlight()
+            else p:Hide();self.optionsNavigation[i]:UnlockHighlight() end
+        end
+    end
     local function page(title)
         local p=CreateFrame("Frame",nil,f);p:SetPoint("TOPLEFT",18,-100);p:SetWidth(605);p:SetHeight(470);p:Hide()
         pages[#pages+1]=p
         local nav=button(f,title,18+(#pages-1)*151,-67,145,function()
-            for _,v in ipairs(pages) do v:Hide() end;p:Show()
-            for _,b in ipairs(addon.optionsNavigation) do
-                if b.blkPage==p then b:LockHighlight() else b:UnlockHighlight() end
-            end
+            for i,v in ipairs(pages) do if v==p then addon:SelectOptionsPage(i);break end end
         end)
         nav.blkNavigation=true;nav.blkPage=p
         self.optionsNavigation[#self.optionsNavigation+1]=nav
@@ -48,8 +53,13 @@ function addon:BuildOptions()
         c:SetWidth(24);c:SetHeight(24);c:SetPoint("TOPLEFT",x,y)
         _G[c:GetName().."Text"]:SetText(title)
         addon:RegisterOptionsArt(c)
-        c:SetScript("OnClick",function(self) addon:Set(key,self:GetChecked() and true or false) end)
-        controls[#controls+1]=function() c:SetChecked(addon.db[key]) end
+        c:SetScript("OnClick",function(self)
+            if key=="showTestAuras" then addon:SetTestAuras(self:GetChecked() and true or false)
+            else addon:Set(key,self:GetChecked() and true or false) end
+        end)
+        controls[#controls+1]=function()
+            if key=="showTestAuras" then c:SetChecked(addon.testAuras and true or false) else c:SetChecked(addon.db[key]) end
+        end
         return c
     end
     local function slider(parent,key,title,x,y,lo,hi,step,format)
@@ -87,12 +97,16 @@ function addon:BuildOptions()
     slider(frames,"powerHeight","Large power-bar height",315,-65,4,12,1)
     slider(frames,"frameScale","Unit-frame scale",10,-140,0.65,1.6,0.05,"%.2f")
     slider(frames,"fontSize","Bar text size",315,-140,9,16,1)
-    button(frames,"Unlock frames",0,-210,140,function() addon:SetUnlocked(true);f:Hide() end)
+    button(frames,"Unlock frames",0,-210,140,function() if addon:SetUnlocked(true) then f:Hide() end end)
     button(frames,"Lock frames",150,-210,140,function() addon:SetUnlocked(false) end)
     button(frames,"Reset frames",300,-210,140,function() StaticPopup_Show("BETTERLKFRAMES_RESET_FRAMES") end)
     StaticPopupDialogs.BETTERLKFRAMES_RESET_FRAMES={
         text="Restore all movable frames in the active configuration to Blizzard positions? Frames will be locked. Other settings and profiles are preserved.",
-        button1=ACCEPT,button2=CANCEL,OnAccept=function() addon:ResetFrames() end,
+        button1=ACCEPT,button2=CANCEL,OnAccept=function(dialog)
+            -- Hide before layout work, so an error cannot leave a stale confirmation.
+            if dialog then dialog:Hide() end
+            addon:ResetFrames()
+        end,
         timeout=0,whileDead=true,hideOnEscape=true}
     check(frames,"namesAbove","Names above large bars",0,-245)
     check(frames,"roundedBars","Rounded large-bar edges",300,-245)
@@ -109,10 +123,13 @@ function addon:BuildOptions()
     check(casts,"auraTimers","Aura time remaining",0,-40)
     check(casts,"auraSpirals","Add missing aura cooldown spirals",300,-40)
     check(casts,"auraWarnings","Expiring-aura red border",0,-80)
+    check(casts,"showTestAuras","Show test auras",300,-80)
+    self.auraOptionsPage=casts
+    casts:SetScript("OnHide",function() addon:SetTestAuras(false) end)
     slider(casts,"castScale","Native cast-bar scale",10,-145,0.6,2,0.05,"%.2f")
     slider(casts,"warningSeconds","Aura warning seconds",315,-145,0,10,1)
     slider(casts,"auraOffset","Target/focus aura gap",10,-225,0,12,1)
-    label(casts,"Gold borders mark important spell IDs: /bf aura SPELLID\nRun the same command again to remove an ID.\nNative cooldown spirals are preserved. No aura filtering or secure reordering.\nParty casting information depends on what the Wrath client can see.",0,-290,12)
+    label(casts,"Gold borders mark important spell IDs: /bf aura SPELLID\nRun the same command again to remove an ID.\nNative cooldown spirals are preserved. No aura filtering or secure reordering.\nParty casting information depends on what the Wrath client can see.\nTest samples: gold border uses /bf aura 21562. Preview stops in combat.",0,-290,12)
     local profiles=page("Profiles / help")
     local current=label(profiles,"",0,-4,12)
     local selector=CreateFrame("Frame","BetterLKFramesProfileSelect",profiles,"UIDropDownMenuTemplate")
@@ -123,7 +140,8 @@ function addon:BuildOptions()
             local name,scope=entry.name,entry.scope
             local info=UIDropDownMenu_CreateInfo();info.text=entry.label
             local active=BetterLKFramesCharDB.activeProfile
-            info.checked=active and active.name==name and active.scope==scope
+            info.checked=(scope=="default" and not active and not BetterLKFramesCharDB.useCharacter) or
+                (active and active.name==name and active.scope==scope)
             info.func=function() addon:Profile("load",name,scope);CloseDropDownMenus() end
             UIDropDownMenu_AddButton(info)
         end
@@ -170,6 +188,7 @@ function addon:BuildOptions()
         OnAccept=function() addon:Reset();f:Hide() end,timeout=0,whileDead=true,hideOnEscape=true}
     function addon:RefreshOptions() for _,refresh in ipairs(controls) do refresh() end end
     f:SetScript("OnShow",function() addon:RefreshOptions() end)
+    f:SetScript("OnHide",function() addon:SetTestAuras(false) end)
     self.optionsNavigation[1]:LockHighlight()
     pages[1]:Show();f:Hide()
     addon:ThemeOptions()

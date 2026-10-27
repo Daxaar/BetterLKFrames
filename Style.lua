@@ -92,3 +92,20 @@ function addon:SkinAura(button,f)
     if f.skin then if self.db.enabled and self.db.darkAuras then f.skin:Show() else f.skin:Hide() end end
     -- Keep native debuff-type/stealable colours and red/gold alert borders intact.
 end
+
+-- Suppress only the resting badge; let Blizzard own level text, combat and vehicles.
+function addon:UpdateRestBadge()
+    if not self.db then return end
+    if self.db.enabled then
+        self.restBadgeHidden=true
+        if PlayerRestIcon then PlayerRestIcon:Hide() end
+        if PlayerRestGlow then PlayerRestGlow:Hide() end
+        if PlayerLevelText and not (UnitHasVehicleUI and UnitHasVehicleUI("player")) then PlayerLevelText:Show() end
+    elseif self.restBadgeHidden then
+        self.restBadgeHidden=nil
+        if PlayerFrame_UpdateStatus then PlayerFrame_UpdateStatus() end
+    end
+end
+if type(PlayerFrame_UpdateStatus)=="function" then
+    hooksecurefunc("PlayerFrame_UpdateStatus",function() addon:UpdateRestBadge() end)
+end

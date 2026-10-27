@@ -42,7 +42,7 @@ function addon:ProfileLabel(name,scope)
     return name.." (account)"
 end
 function addon:ListProfiles()
-    local list={}
+    local list={{scope="default",label="Shared account settings (default account-wide)"}}
     for _,scope in ipairs({"account","character"}) do
         for name,data in pairs(library(self,scope)) do
             if type(name)=="string" and type(data)=="table" then
@@ -59,6 +59,7 @@ function addon:ActiveProfileLabel()
     return BetterLKFramesCharDB.useCharacter and "Unnamed character settings" or "Shared account settings"
 end
 function addon:Profile(mode,name,scope)
+    if mode=="load" and scope=="default" then return self:CharacterProfile("account") end
     if InCombatLockdown() then self:Message("Switch or save profiles outside combat.");return false end
     name=type(name)=="string" and name or ""
     if mode=="save" then name=name:match("^%s*(.-)%s*$") end

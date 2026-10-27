@@ -24,8 +24,8 @@ function addon:ThemeOptions()
         slider:SetBackdropBorderColor(c[1]*factor,c[2]*factor,c[3]*factor,c[4] or 1)
     end
     for _,b in ipairs(self.optionsArt or {}) do
-        tint(b.GetNormalTexture and b:GetNormalTexture(),on and not b.blkNavigation)
-        tint(b.GetPushedTexture and b:GetPushedTexture(),on and not b.blkNavigation)
+        tint(b.GetNormalTexture and b:GetNormalTexture(),on and not b.blkBrightButton)
+        tint(b.GetPushedTexture and b:GetPushedTexture(),on and not b.blkBrightButton)
         -- Check marks, labels, highlights and slider thumbs remain bright.
     end
 end
