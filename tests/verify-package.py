@@ -1,12 +1,17 @@
 from pathlib import Path
-import hashlib,json,zipfile,re,struct
+import argparse,datetime,hashlib,json,zipfile,re,struct,subprocess
+parser=argparse.ArgumentParser()
+parser.add_argument("--development",action="store_true")
+parser.add_argument("--issues",type=int,nargs="+",default=[])
+args=parser.parse_args()
 base=Path(__file__).resolve().parents[1]; addon=base;dist=base/'dist'
 dist.mkdir(exist_ok=True)
-files=sorted(list(addon.glob('*.lua'))+list(addon.glob('*.toc'))+[addon/n for n in ['README.md','FEATURES.md','PROVENANCE.md','CHANGELOG.md','LICENSE','CONTRIBUTING.md']]+list((addon/'Media').glob('*.tga')))
-expected={'BetterLKFrames.toc','Core.lua','Profiles.lua','Windows.lua','AuraLayout.lua','Style.lua','Snapping.lua','Options.lua','README.md','FEATURES.md','PROVENANCE.md','CHANGELOG.md','LICENSE','CONTRIBUTING.md'}
+files=sorted(list(addon.glob('*.lua'))+list(addon.glob('*.toc'))+[addon/n for n in ['README.md','FEATURES.md','PROVENANCE.md','CHANGELOG.md','LICENSE','CONTRIBUTING.md','DEVELOPMENT.md']]+list((addon/'Media').glob('*.tga')))
+expected={'BetterLKFrames.toc','Core.lua','Profiles.lua','Windows.lua','AuraLayout.lua','Style.lua','Snapping.lua','Options.lua','README.md','FEATURES.md','PROVENANCE.md','CHANGELOG.md','LICENSE','CONTRIBUTING.md','DEVELOPMENT.md'}
 assert {p.name for p in files if p.parent==addon}==expected
 text=(addon/'BetterLKFrames.toc').read_text()
-assert '## Interface: 30300' in text and '## Version: 0.2.1' in text
+assert '## Interface: 30300' in text
+version=re.search(r'^## Version: ([0-9A-Za-z.+-]+)$',text,re.M).group(1)
 assert '## SavedVariablesPerCharacter: BetterLKFramesCharDB' in text
 for line in text.splitlines():
     if line and not line.startswith('#'): assert (addon/line).is_file(),line
@@ -32,17 +37,33 @@ for p in textures:
         bottom=data[18+4*(w//2)];top=data[18+4*((h-1)*w+w//2)]
         assert top>bottom+80,'gradient must brighten toward top'
     if 'Edge' in p.name:assert data[18+4*((h//2)*w+w//2)+3]==0,'frame centre must be transparent'
-path=dist/'BetterLKFrames-0.2.1.zip'
+metadata=None
+commit=subprocess.check_output(['git','-C',str(base),'rev-parse','HEAD'],text=True).strip()
+if args.development:
+    assert args.issues and all(n>0 for n in args.issues),'Addressed issue numbers required'
+    assert not subprocess.check_output(['git','-C',str(base),'status','--porcelain']), 'Development build requires an exact clean commit'
+    metadata={'commit':commit,'issues':sorted(set(args.issues)),'version':version,'interface':30300,'in_game_tested':False}
+name='BetterLKFrames-dev-'+commit if args.development else 'BetterLKFrames-'+version
+path=dist/(name+'.zip')
+stamp=int(subprocess.check_output(['git','-C',str(base),'show','-s','--format=%ct','HEAD'],text=True))
+# Stable ZIP metadata: the same clean source commit yields the same development ZIP.
+date=datetime.datetime.fromtimestamp(stamp,datetime.timezone.utc).timetuple()[:6]
+contents={'BetterLKFrames/'+p.relative_to(addon).as_posix():p.read_bytes() for p in files}
+if metadata: contents['BetterLKFrames/DEVELOPMENT.json']=(json.dumps(metadata,indent=2)+'\n').encode()
 with zipfile.ZipFile(path,'w',zipfile.ZIP_DEFLATED) as z:
-    for p in files:z.write(p,'BetterLKFrames/'+p.relative_to(addon).as_posix())
+    for entry,data in sorted(contents.items()):
+        info=zipfile.ZipInfo(entry,date_time=date);info.compress_type=zipfile.ZIP_DEFLATED
+        info.create_system=3;info.external_attr=0o100644<<16
+        z.writestr(info,data)
 with zipfile.ZipFile(path) as z:
     assert z.testzip() is None
-    assert set(z.namelist())=={'BetterLKFrames/'+p.relative_to(addon).as_posix() for p in files}
-    for p in files:assert z.read('BetterLKFrames/'+p.relative_to(addon).as_posix())==p.read_bytes()
+    assert set(z.namelist())==set(contents)
+    for entry,data in contents.items():assert z.read(entry)==data
 sha=hashlib.sha256(path.read_bytes()).hexdigest()
 (path.with_suffix('.zip.sha256')).write_text(sha+'  '+path.name+'\n')
 manifest={p.relative_to(addon).as_posix():hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
-(dist/'BetterLKFrames-0.2.1-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
+if metadata:manifest['DEVELOPMENT.json']=hashlib.sha256(contents['BetterLKFrames/DEVELOPMENT.json']).hexdigest()
+(dist/(name+'-manifest.json')).write_text(json.dumps(manifest,indent=2)+'\n')
 print('PASS TOC / legacy API / secret-pattern / 7 RGBA TGA asset / ZIP content and CRC checks')
-print('Release:',path.name,'bytes:',path.stat().st_size)
+print('Development build:' if args.development else 'Package:',path.name,'bytes:',path.stat().st_size)
 print('SHA256:',sha)

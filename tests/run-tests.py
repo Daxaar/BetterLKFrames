@@ -13,3 +13,5 @@ lua.execute((root/'tests/assertions.lua').read_text())
 lua.execute((root/'tests/assertions-v11.lua').read_text())
 
 lua.execute((root/'tests/assertions-020.lua').read_text())
+
+lua.execute((root/'tests/assertions-issues.lua').read_text())

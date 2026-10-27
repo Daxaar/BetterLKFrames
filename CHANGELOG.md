@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.2-dev — awaiting owner in-game acceptance
+
+- Refs #1: Disable all aura feature checkboxes and the aura gap on fresh settings; preserve existing preferences.
+- Refs #2: Keep navigation buttons bright with native hover/pushed art and selected-page highlighting.
+- Refs #3: Prefer `/bf`, retain available compatibility aliases and report existing command conflicts.
+- Refs #4: Add scoped profile selection/creation, automatic active-profile persistence and backwards-compatible account profile retention.
+- Refs #5: Add confirmed active-layout reset to native positions, with locked state and preservation of other settings/profiles.
+- Add read-only Actions validation and exact-commit development ZIP artifacts with commit/issue metadata and checksums.
+- Lua 5.1 mocked regressions and packaging/privacy checks cover automated behavior; rendering, combat taint and actual client acceptance remain unverified.
+
+
 ## 0.2.1 — 2026-10-27
 
 Rename active addon to BetterLKFrames: folder/TOC, globals, saved-variable names, widget identifiers, media paths, settings titles and `/blkf` / `/betterlkframes` commands. Move development to an independent addon workspace, independent of server tooling. Start fresh account/character settings; no legacy migration or command aliases. Preserve original archives/checksums. Pending dead-target duplicate text remains unfixed; no UI behaviour changes intended.

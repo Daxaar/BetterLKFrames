@@ -22,18 +22,24 @@ function addon:BuildOptions()
         tile=true,tileSize=32,edgeSize=32,insets={left=11,right=12,top=12,bottom=11}})
     f:SetBackdropColor(.08,.08,.08,.98)
     label(f,"BetterLKFrames",18,-16,18)
-    label(f,"Original Wrath frame styling | /blkf | Layout changes wait until combat ends.",18,-43,11)
+    label(f,"Original Wrath frame styling | /bf | Layout changes wait until combat ends.",18,-43,11)
     local close=CreateFrame("Button",nil,f,"UIPanelCloseButton");close:SetPoint("TOPRIGHT",-3,-3)
     addon:RegisterOptionsArt(close)
     close:SetScript("OnClick",function() f:Hide() end)
     table.insert(UISpecialFrames,"BetterLKFramesOptions")
     local pages,controls={},{}
+    self.optionsNavigation={}
     local function page(title)
         local p=CreateFrame("Frame",nil,f);p:SetPoint("TOPLEFT",18,-100);p:SetWidth(605);p:SetHeight(470);p:Hide()
         pages[#pages+1]=p
-        button(f,title,18+(#pages-1)*151,-67,145,function()
+        local nav=button(f,title,18+(#pages-1)*151,-67,145,function()
             for _,v in ipairs(pages) do v:Hide() end;p:Show()
+            for _,b in ipairs(addon.optionsNavigation) do
+                if b.blkPage==p then b:LockHighlight() else b:UnlockHighlight() end
+            end
         end)
+        nav.blkNavigation=true;nav.blkPage=p
+        self.optionsNavigation[#self.optionsNavigation+1]=nav
         return p
     end
     local function check(parent,key,title,x,y)
@@ -83,6 +89,11 @@ function addon:BuildOptions()
     slider(frames,"fontSize","Bar text size",315,-140,9,16,1)
     button(frames,"Unlock frames",0,-210,140,function() addon:SetUnlocked(true);f:Hide() end)
     button(frames,"Lock frames",150,-210,140,function() addon:SetUnlocked(false) end)
+    button(frames,"Reset frames",300,-210,140,function() StaticPopup_Show("BETTERLKFRAMES_RESET_FRAMES") end)
+    StaticPopupDialogs.BETTERLKFRAMES_RESET_FRAMES={
+        text="Restore all movable frames in the active configuration to Blizzard positions? Frames will be locked. Other settings and profiles are preserved.",
+        button1=ACCEPT,button2=CANCEL,OnAccept=function() addon:ResetFrames() end,
+        timeout=0,whileDead=true,hideOnEscape=true}
     check(frames,"namesAbove","Names above large bars",0,-245)
     check(frames,"roundedBars","Rounded large-bar edges",300,-245)
     check(frames,"snapFrames","Snap edges / centres on release",0,-280)
@@ -101,23 +112,51 @@ function addon:BuildOptions()
     slider(casts,"castScale","Native cast-bar scale",10,-145,0.6,2,0.05,"%.2f")
     slider(casts,"warningSeconds","Aura warning seconds",315,-145,0,10,1)
     slider(casts,"auraOffset","Target/focus aura gap",10,-225,0,12,1)
-    label(casts,"Gold borders mark important spell IDs: /blkf aura SPELLID\nRun the same command again to remove an ID.\nNative cooldown spirals are preserved. No aura filtering or secure reordering.\nParty casting information depends on what the Wrath client can see.",0,-290,12)
+    label(casts,"Gold borders mark important spell IDs: /bf aura SPELLID\nRun the same command again to remove an ID.\nNative cooldown spirals are preserved. No aura filtering or secure reordering.\nParty casting information depends on what the Wrath client can see.",0,-290,12)
     local profiles=page("Profiles / help")
-    label(profiles,"Profile name",0,-4,12)
+    local current=label(profiles,"",0,-4,12)
+    local selector=CreateFrame("Frame","BetterLKFramesProfileSelect",profiles,"UIDropDownMenuTemplate")
+    selector:SetPoint("TOPLEFT",-15,-28);UIDropDownMenu_SetWidth(selector,340)
+    self.profileSelector=selector
+    UIDropDownMenu_Initialize(selector,function()
+        for _,entry in ipairs(addon:ListProfiles()) do
+            local name,scope=entry.name,entry.scope
+            local info=UIDropDownMenu_CreateInfo();info.text=entry.label
+            local active=BetterLKFramesCharDB.activeProfile
+            info.checked=active and active.name==name and active.scope==scope
+            info.func=function() addon:Profile("load",name,scope);CloseDropDownMenus() end
+            UIDropDownMenu_AddButton(info)
+        end
+    end)
+    label(profiles,"New profile (copies current settings)",0,-78,12)
     local edit=CreateFrame("EditBox",nil,profiles,"InputBoxTemplate")
-    edit:SetWidth(260);edit:SetHeight(25);edit:SetPoint("TOPLEFT",10,-30);edit:SetAutoFocus(false);edit:SetMaxLetters(40)
+    edit:SetWidth(210);edit:SetHeight(25);edit:SetPoint("TOPLEFT",10,-103);edit:SetAutoFocus(false);edit:SetMaxLetters(40)
+    self.profileNameEdit=edit
     edit:SetScript("OnEscapePressed",function(self) self:ClearFocus() end)
-    button(profiles,"Save profile",290,-30,130,function() addon:Profile("save",edit:GetText());edit:ClearFocus() end)
-    button(profiles,"Load profile",430,-30,130,function() addon:Profile("load",edit:GetText());edit:ClearFocus();f:Hide();f:Show() end)
-    label(profiles,"Saved profiles",0,-85,12)
-    local names=label(profiles,"",0,-110,12);names:SetWidth(580);names:SetJustifyH("LEFT")
+    local newScope="account"
+    local scopeMenu=CreateFrame("Frame","BetterLKFramesProfileScope",profiles,"UIDropDownMenuTemplate")
+    scopeMenu:SetPoint("TOPLEFT",220,-101);UIDropDownMenu_SetWidth(scopeMenu,160)
+    UIDropDownMenu_SetText(scopeMenu,"Account-wide")
+    UIDropDownMenu_Initialize(scopeMenu,function()
+        for _,scope in ipairs({"account","character"}) do
+            local selected=scope
+            local info=UIDropDownMenu_CreateInfo();info.text=scope=="account" and "Account-wide" or "This character"
+            local text=info.text;info.checked=newScope==scope
+            info.func=function() newScope=selected;UIDropDownMenu_SetText(scopeMenu,text);CloseDropDownMenus() end
+            UIDropDownMenu_AddButton(info)
+        end
+    end)
+    self.profileScopeMenu=scopeMenu
+    button(profiles,"Create",430,-103,130,function() addon:Profile("save",edit:GetText(),newScope);edit:ClearFocus() end)
     controls[#controls+1]=function()
-        local list={};for name in pairs(addon.db.profiles) do list[#list+1]=name end
-        table.sort(list);names:SetText(#list>0 and table.concat(list,", ") or "No profiles saved yet.")
+        local active=addon:ActiveProfileLabel()
+        current:SetText("Current profile: "..active);UIDropDownMenu_SetText(selector,active)
     end
     local scope=label(profiles,"",0,-155,12)
     controls[#controls+1]=function()
-        scope:SetText(BetterLKFramesCharDB.useCharacter and "Active: this character only" or "Active: shared account settings")
+        local active=BetterLKFramesCharDB.activeProfile
+        if active then scope:SetText(active.scope=="character" and "Editing character profile" or "Editing account-wide profile")
+        else scope:SetText(BetterLKFramesCharDB.useCharacter and "Active: this character only" or "Active: shared account settings") end
     end
     local function changeScope(mode) addon:CharacterProfile(mode);f:Hide();f:Show() end
     button(profiles,"Use account",0,-185,140,function() changeScope("account") end)
@@ -126,10 +165,12 @@ function addon:BuildOptions()
     button(profiles,"Character: defaults",0,-220,180,function() changeScope("defaults") end)
     button(profiles,"Character: Blizzard",190,-220,180,function() changeScope("blizzard") end)
     button(profiles,"Reset active scope",0,-265,180,function() StaticPopup_Show("BETTERLKFRAMES_RESET") end)
-    label(profiles,"Character: defaults starts fresh addon settings for only this character.\nCharacter: Blizzard restores the native appearance for only this character.\nAccount settings and shared named profiles remain available.\nCopy/default/Blizzard replaces this character's previous local settings.\n\n/blkf character account | copy | defaults | blizzard | resume\n/blkf profile save NAME | /blkf profile load NAME\n/blkf on | off | unlock | lock | aura SPELLID",0,-310,12)
-    StaticPopupDialogs.BETTERLKFRAMES_RESET={text="Reset the active scope? Account reset also clears named profiles; character reset preserves them.",button1=ACCEPT,button2=CANCEL,
+    label(profiles,"Character: defaults starts fresh addon settings for only this character.\nCharacter: Blizzard restores the native appearance for only this character.\nLegacy named profiles remain account-wide. New profiles copy current settings.\nCopy/default/Blizzard replaces this character's previous local settings.\n\n/bf character account | copy | defaults | blizzard | resume\n/bf profile save NAME | /bf profile load NAME\n/bf on | off | unlock | lock | aura SPELLID",0,-310,12)
+    StaticPopupDialogs.BETTERLKFRAMES_RESET={text="Reset the active scope? Unnamed account reset clears account profiles. Named/character reset preserves other profiles.",button1=ACCEPT,button2=CANCEL,
         OnAccept=function() addon:Reset();f:Hide() end,timeout=0,whileDead=true,hideOnEscape=true}
-    f:SetScript("OnShow",function() for _,refresh in ipairs(controls) do refresh() end end)
+    function addon:RefreshOptions() for _,refresh in ipairs(controls) do refresh() end end
+    f:SetScript("OnShow",function() addon:RefreshOptions() end)
+    self.optionsNavigation[1]:LockHighlight()
     pages[1]:Show();f:Hide()
     addon:ThemeOptions()
     if InterfaceOptions_AddCategory then

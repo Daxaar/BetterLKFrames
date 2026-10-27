@@ -12,6 +12,7 @@ ok(MultiBarRightButton1.normalTexture.colour[1]==a.db.darkness,"side bar border 
 ok(CharacterBag0Slot.normalTexture.colour[1]==a.db.darkness,"bag border tinted")
 ok(CharacterMicroButton.normalTexture.colour==nil,"microbutton icon texture not tinted")
 BUFFS.player={{"Test aura","","icon",1,nil,10,104,"player",false,false,123}}
+a:Set("darkAuras",true)
 a:UpdateAuras();ok(BuffButton1.blkAura.skin.shown,"common aura edge visible")
 ok(BuffButton1.blkAura.time.points[1][1]=="TOP","player aura timer below icon")
 a:Set("darkAuras",false);a:UpdateAuras();ok(not BuffButton1.blkAura.skin.shown,"aura border independently disabled")

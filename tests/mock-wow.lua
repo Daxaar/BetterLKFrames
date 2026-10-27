@@ -176,3 +176,15 @@ WorldMapFrame=CreateFrame("Frame","WorldMapFrame",UIParent)
 WorldMapDetailTile1=WorldMapFrame:CreateTexture("WorldMapDetailTile1","ARTWORK");WorldMapDetailTile1:SetTexture("Interface\\WorldMap\\Elwynn\\Elwynn1")
 WorldMapFrameTexture1=WorldMapFrame:CreateTexture("WorldMapFrameTexture1","ARTWORK");WorldMapFrameTexture1:SetTexture("Interface\\WorldMap\\UI-WorldMap-Top1")
 TargetFrameDebuff1=CreateFrame("Button","TargetFrameDebuff1",TargetFrame);TargetFrameDebuff1:SetPoint("TOPLEFT",TargetFrame,"BOTTOMLEFT",5,2)
+
+-- Legacy dropdown helpers: populate on opening, then invoke a selected entry.
+function UIDropDownMenu_SetWidth(frame,width) frame.menuWidth=width end
+function UIDropDownMenu_SetText(frame,text) frame.menuText=text end
+function UIDropDownMenu_Initialize(frame,fn) frame.initialize=fn end
+function UIDropDownMenu_CreateInfo() return {} end
+function UIDropDownMenu_AddButton(info) table.insert(OPEN_MENU.items,info) end
+function OpenTestMenu(frame) frame.items={};OPEN_MENU=frame;frame.initialize();return frame.items end
+function CloseDropDownMenus() OPEN_MENU=nil end
+function methods:LockHighlight() self.highlightLocked=true end
+function methods:UnlockHighlight() self.highlightLocked=false end
+function methods:SetUserPlaced(value) geometry(self);self.userPlaced=value end

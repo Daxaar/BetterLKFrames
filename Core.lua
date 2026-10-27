@@ -9,13 +9,13 @@ local defaults = {
     darkFrames = true, darkActionBars = true, darkMinimap = true, darkTooltip = false,
     classPortraits = false, hideCombatFlash = false, hidePvp = false,
     healthText = true, powerText = true, castTimers = true, partyCastbars = true,
-    auraTimers = true, auraSpirals = true, auraWarnings = true,
+    auraTimers = false, auraSpirals = false, auraWarnings = false,
     healthHeight = 22, powerHeight = 11, darkness = 0.28, frameScale = 1,
     castScale = 1, fontSize = 11, warningSeconds = 5,
-    darkWindows = true, showGrid = true, auraOffset = 4,
-    roundedBars = true, namesAbove = true, darkButtons = true, darkAuras = true,
+    darkWindows = true, showGrid = true, auraOffset = 0,
+    roundedBars = true, namesAbove = true, darkButtons = true, darkAuras = false,
     snapFrames = true, snapGrid = false, showGuides = true, snapDistance = 10, gridSize = 32,
-    positions = {}, importantSpells = {}, profiles = {}, version = 3,
+    blizzardLayout = false, positions = {}, importantSpells = {}, profiles = {}, version = 3,
 }
 addon.defaults = defaults
 addon.frames, addon.castbars, addon.auras = {}, {}, {}
@@ -213,6 +213,7 @@ local function savePosition(name)
     local e = addon.frames[name]; local f = e.owner
     local ratio = f:GetEffectiveScale()/UIParent:GetEffectiveScale()
     addon.db.positions[name] = {x=f:GetLeft()*ratio,y=f:GetBottom()*ratio}
+    addon:CommitSettings()
 end
 function addon:CreateMover(name,e)
     if e.mover then return end
@@ -250,8 +251,35 @@ function addon:SetUnlocked(value)
         if value and e.owner:IsShown() then e.mover:Show() else e.mover:Hide() end
     end
     if self.ShowMoveGuides then self:ShowMoveGuides(value) end
-    self:Message(value and "Drag green handles; snap on release. Hold Shift to bypass. /blkf lock when finished." or "Frames locked.")
+    self:Message(value and "Drag green handles; snap on release. Hold Shift to bypass. /bf lock when finished." or "Frames locked.")
     return true
+end
+-- Native 12340 anchors. Boss positioning is also refreshed by Blizzard on reset.
+local function defaultPoints(name,e)
+    local offsets={PlayerFrame={-19,-4},TargetFrame={250,-4},FocusFrame={250,-240},PetFrame={80,-60}}
+    if offsets[name] then return {{"TOPLEFT",UIParent,"TOPLEFT",unpack(offsets[name])}} end
+    if name=="FocusFrameToT" and FocusFrame and FocusFrame.smallSize then
+        return {{"BOTTOMRIGHT",FocusFrame,"BOTTOMRIGHT",-13,-17}}
+    end
+    if name=="TargetFrameToT" or name=="FocusFrameToT" then
+        return {{"BOTTOMRIGHT",e.owner:GetParent(),"BOTTOMRIGHT",-35,-10}}
+    end
+    local party=tonumber(name:match("^PartyMemberFrame(%d)$"))
+    if party==1 then return {{"TOPLEFT",UIParent,"TOPLEFT",10,-160}} end
+    if party and _G["PartyMemberFrame"..(party-1).."PetFrame"] then
+        return {{"TOPLEFT",_G["PartyMemberFrame"..(party-1).."PetFrame"],"BOTTOMLEFT",-23,-10}}
+    end
+    local boss=tonumber(name:match("^Boss(%d)TargetFrame$"))
+    if boss==1 then return {{"TOPRIGHT",UIParent,"TOPRIGHT",55,-236}} end
+    if boss and _G["Boss"..(boss-1).."TargetFrame"] then
+        return {{"TOPLEFT",_G["Boss"..(boss-1).."TargetFrame"],"BOTTOMLEFT",0,10}}
+    end
+    local arena=tonumber(name:match("^ArenaEnemyFrame(%d)$"))
+    if arena==1 then return {{"TOPRIGHT",e.owner:GetParent(),"TOPRIGHT",-2,0}} end
+    if arena and _G["ArenaEnemyFrame"..(arena-1)] then
+        return {{"TOP",_G["ArenaEnemyFrame"..(arena-1)],"BOTTOM",0,-20}}
+    end
+    return e.points
 end
 function addon:Apply()
     if not self.db then return end
@@ -267,11 +295,17 @@ function addon:Apply()
     end
     for name,e in pairs(self.frames) do
         if e.stopPending then e.owner:StopMovingOrSizing();e.stopPending=nil;e.dragging=nil end
-        if e.positionApplied and (not self.db.enabled or not self.db.positions[name]) then
+        if (e.positionApplied and (not self.db.enabled or not self.db.positions[name])) or
+            (self.db.blizzardLayout and not self.db.positions[name] and e.layoutDB~=self.db) then
+            if self.db.blizzardLayout then
+                e.points=defaultPoints(name,e)
+                if e.owner.SetUserPlaced then e.owner:SetUserPlaced(false) end
+            end
             e.owner:ClearAllPoints()
             for _,point in ipairs(e.points) do e.owner:SetPoint(unpack(point)) end
             e.positionApplied=nil
         end
+        e.layoutDB=self.db
         for obj,alpha in pairs(e.nativeTexts) do obj:SetAlpha(self.db.enabled and 0 or alpha) end
         e.owner:SetScale(e.originalScale*(self.db.enabled and self.db.frameScale or 1))
         if self.db.enabled then
@@ -315,23 +349,24 @@ function addon:Set(key,value)
     self.db[key]=value;self.db=normalize(self.db);self:CommitSettings();self:Apply()
 end
 function addon:Reset()
-    if InCombatLockdown() then self:Message("Reset is unavailable during combat.");return end
-    local profiles=self.db.profiles
-    self.db=copy(defaults)
-    if BetterLKFramesCharDB and BetterLKFramesCharDB.useCharacter then self.db.profiles=profiles end
-    self:CommitSettings();self:Apply()
-    self:Message("Defaults restored for the active settings scope.")
+    return self:ResetSettings()
 end
-function addon:Profile(mode,name)
-    if not name or name=="" then self:Message("Use /blkf profile save NAME or /blkf profile load NAME.");return end
-    if mode=="save" then
-        local d=copy(self.db);d.profiles=nil;self.db.profiles[name]=d;self:Message("Saved profile "..name)
-    elseif mode=="load" then
-        local profile=self.db.profiles[name]
-        if not profile then self:Message("Unknown profile: "..name);return end
-        local profiles=self.db.profiles;self.db=normalize(copy(profile));self.db.profiles=profiles
-        self:CommitSettings();self:Apply();self:Message("Loaded profile "..name)
+function addon:ResetFrames()
+    if InCombatLockdown() then self:Message("Reset frames outside combat.");return false end
+    self:SetUnlocked(false)
+    self.db.positions={};self.db.blizzardLayout=true
+    for name,e in pairs(self.frames) do
+        if e.dragging or e.stopPending then e.owner:StopMovingOrSizing();e.dragging=nil;e.stopPending=nil end
+        e.points=defaultPoints(name,e)
+        e.owner:ClearAllPoints()
+        for _,point in ipairs(e.points) do e.owner:SetPoint(unpack(point)) end
+        if e.owner.SetUserPlaced then e.owner:SetUserPlaced(false) end
+        e.positionApplied=nil;e.layoutDB=self.db
     end
+    self:CommitSettings();self:Apply()
+    if UIParent_ManageFramePositions then UIParent_ManageFramePositions() end
+    self:Message("Active layout reset to Blizzard positions. Frames locked; other settings preserved.")
+    return true
 end
 function addon:SetupCasts()
     for _,name in ipairs({"CastingBarFrame","PetCastingBarFrame","TargetFrameSpellBar","FocusFrameSpellBar"}) do
@@ -452,19 +487,33 @@ function addon:Command(message)
     elseif cmd=="profile" then local mode,name=string.match(rest,"^(%S+)%s+(.+)$");self:Profile(mode,name)
     elseif cmd=="aura" then
         local id=tonumber(rest)
-        if not id or not GetSpellInfo(id) then self:Message("Use /blkf aura SPELLID with a valid Wrath spell ID.");return end
+        if not id or not GetSpellInfo(id) then self:Message("Use /bf aura SPELLID with a valid Wrath spell ID.");return end
         self.db.importantSpells[id]=not self.db.importantSpells[id];self:Apply();self:Message("Important-aura setting toggled for "..GetSpellInfo(id))
-    elseif cmd=="help" then self:Message("/blkf options | unlock | lock | on | off | reset | aura SPELLID | profile save/load NAME")
+    elseif cmd=="help" then self:Message("/bf options | unlock | lock | on | off | reset | aura SPELLID | profile save/load NAME")
     elseif self.OpenOptions then self:OpenOptions() end
+end
+function addon:RegisterCommands()
+    SlashCmdList.BETTERLKFRAMES=function(msg) self:Command(msg) end
+    for i=1,4 do _G["SLASH_BETTERLKFRAMES"..i]=nil end
+    local index=0
+    for _,alias in ipairs({"/bf","/blkf","/betterlkframes","/gf"}) do
+        local conflict=false
+        for key,value in pairs(_G) do
+            if type(key)=="string" and type(value)=="string" and string.lower(value)==alias then
+                local owner=key:match("^SLASH_(.-)%d+$")
+                if owner and owner~="BETTERLKFRAMES" then conflict=true;break end
+            end
+        end
+        if conflict then self:Message("Command "..alias.." belongs to another addon; leaving it unchanged.")
+        else index=index+1;_G["SLASH_BETTERLKFRAMES"..index]=alias end
+    end
 end
 addon:SetScript("OnEvent",function(self,event,arg1)
     if event=="ADDON_LOADED" and arg1=="BetterLKFrames" then
         self:InitSettings()
-        SLASH_BETTERLKFRAMES1="/blkf";SLASH_BETTERLKFRAMES2="/betterlkframes"
-        SlashCmdList.BETTERLKFRAMES=function(msg) self:Command(msg) end
         if self.BuildOptions then self:BuildOptions() end
     elseif event=="PLAYER_LOGIN" then
-        self:InitSettings();self:Apply();self:Message("Loaded. /blkf for settings; /blkf unlock to move frames.")
+        self:InitSettings();self:RegisterCommands();self:Apply();self:Message("Loaded. /bf for settings; /bf unlock to move frames.")
     elseif event=="PLAYER_REGEN_ENABLED" then self:Apply()
     elseif event=="PLAYER_REGEN_DISABLED" and self.unlocked then
         for _,e in pairs(self.frames) do if e.mover then e.mover:Hide() end end
