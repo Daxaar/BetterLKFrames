@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.4-dev — priority Apply blocker, awaiting owner acceptance
+
+- Refs #11: Correct both native-placement clearing paths to respect the original client's movable/resizable precondition. Skip already-cleared placement; temporarily grant mobility only to clear stale placement when necessary, then restore it. No suppressed errors or permanent movement-flag changes.
+- Add strict SetUserPlaced preconditions to the mock and fresh-login regressions for all settings tabs, later apply stages, profile/geometry persistence, reset, movement and combat deferral. Existing feature changes are carried forward without unrelated implementation.
+
+
 ## 0.2.3-dev — awaiting owner in-game acceptance
 
 - Refs #4: Keep original shared account settings permanently selectable in the dropdown without copying over them.

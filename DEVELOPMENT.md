@@ -1,6 +1,22 @@
-# Development testing: Refs #1, #2, #3, #4, #5, #8, #9, #10
+# Development testing: Refs #1, #2, #3, #4, #5, #8, #9, #10, #11
 
-This is a development build for original WoW 3.3.5a build 12340, Interface 30300 and Lua 5.1. Automated checks use mocked client APIs. Owner feedback from 0.2.2-dev informed these follow-ups; the assistant has not performed in-game loading, visual, taint or acceptance testing of 0.2.3-dev. Issues remain open for owner acceptance. No server/client deployment or stable release is implied.
+This is a development build for original WoW 3.3.5a build 12340, Interface 30300 and Lua 5.1. Automated checks use mocked client APIs. Owner feedback from 0.2.2-dev informed these follow-ups; the assistant has not performed in-game loading, visual, taint or acceptance testing of 0.2.4-dev. Issues remain open for owner acceptance. No server/client deployment or stable release is implied.
+
+## Current blocker patch: 0.2.4-dev (Refs #11)
+
+Root cause: original 12340 TargetFrame is non-movable/non-resizable by default (unlike the movable PlayerFrame and FocusFrame). SetUserPlaced requires at least one flag even when clearing with false. Apply and ResetFrames called it merely because the method existed. The previous mock accepted this invalid call, hiding the client failure. The corrected mock models native mobility flags and enforces the precondition; the original code reproduces the owner's TargetFrame error.
+
+Impact: Set/selected-profile commits settings before invoking Apply. An error inside the frame loop leaves later frames partly or wholly unchanged and skips Theme, SetupCasts, Refresh, RefreshAuraOffset and UpdateTestAuras. The frame's layoutDB completion marker is also not updated, so later controls retry the same failing restoration. This explains a broadly repeated error and saved preferences whose visuals do not apply. Frame iteration order is unspecified, so the partial appearance can vary.
+
+Fix: both paths share one placement-clearing helper. Already-unplaced frames are left alone. Movable or resizable frames clear normally. Only a genuinely user-placed frame with neither flag temporarily receives movable=true for the clear, followed immediately by movable=false. No StartMoving call, protected combat mutation, permanent unlock, resizing change, pcall/error swallowing or option reset is introduced. Existing drag behavior and all unrelated feature implementations are preserved.
+
+Validation: a before/after isolated reproduction reports the original error with zero later cast-setup calls, then successful Apply with a completed cast setup. Sixty additional Lua 5.1 assertions exercise fresh initialization, every persisted checkbox across all settings tabs, profile switching, unchanged/stale placement, immovable/movable/resizable flags, repeated apply, native bar widths and saved heights/scale, geometry/profile/reset persistence, manual movement and combat deferral. Together with the existing suites there are 326 mocked assertions. These are code-level tests; owner in-game verification is still required.
+
+Width limitation: the current addon has no independent health-bar width setting. Overlay width follows the native health bar, and frameScale changes its displayed width. The regression changes native width to 175 and verifies overlay width plus a 1.25 saved scale (218.75 displayed units), alongside profile persistence of configured heights/scale. No new width control is implemented in this blocker patch.
+
+Owner retest: install 0.2.4-dev over the previous development addon without resetting SavedVariables. Enable Lua errors, reload, switch between existing account/character/default profiles and exercise settings on each page. Verify all frame visuals update, health/power geometry and scale persist, reset Accept restores positions and closes, manual unlocking/dragging/locking still works, and combat changes apply on leaving combat. Report any exact remaining error. Issue #11 remains open until owner acceptance.
+
+Screenshot check: tests/screenshots/11/ is absent on the refreshed issue-screenshots branch; the issue text and all comments provide the reproduction/stack trace. No screenshots are bundled. This issue-linked patch branch is based on the existing testing branch so its PR can show only #11 changes, while the development ZIP carries forward the prior testing features unchanged.
 
 ## Current iteration: 0.2.3-dev
 
@@ -42,6 +58,6 @@ The `Development build` Actions workflow runs on issue-branch/main pushes, pull 
 
 The artifact contains `BetterLKFrames-dev-<full-commit>.zip`, a SHA256 checksum and a per-file source manifest. Inside the installable ZIP, `BetterLKFrames/DEVELOPMENT.json` records the full source commit, addressed issue numbers and the in-game-test limitation. Source files match that commit; the generated metadata is the only additional file. ZIP entry ordering, timestamps and permissions are fixed for repeatable packaging with the same toolchain. Pull-request builds identify the checked-out test merge commit; issue-branch builds identify the pushed branch commit. Artifact retention is 30 days.
 
-Download the Actions artifact, extract its contained development ZIP, and extract that ZIP into the client's `Interface/AddOns/` directory so `BetterLKFrames/BetterLKFrames.toc` exists. Do not install the repository's test tools or dependencies. A local development-package check is `python3 tests/verify-package.py --development --issues 1 2 3 4 5 8 9 10` from a clean committed checkout. After owner acceptance, update the issue list for subsequent build work rather than treating these issue references as a permanent backlog.
+Download the Actions artifact, extract its contained development ZIP, and extract that ZIP into the client's `Interface/AddOns/` directory so `BetterLKFrames/BetterLKFrames.toc` exists. Do not install the repository's test tools or dependencies. A local development-package check is `python3 tests/verify-package.py --development --issues 1 2 3 4 5 8 9 10 11` from a clean committed checkout. After owner acceptance, update the issue list for subsequent build work rather than treating these issue references as a permanent backlog.
 
 Native anchor and dropdown compatibility was checked against the original-client [FrameXML reference](https://github.com/wowgaming/3.3.5-interface-files), including PlayerFrame.xml, PetFrame.xml, PartyFrame.xml, TargetFrame.xml/lua, Blizzard_ArenaUI.xml, UIParent.lua, UIDropDownMenu.lua and ChatFrame.lua. Research copies remain outside the repository and packages.

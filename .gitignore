@@ -28,6 +28,7 @@
 !/tests/assertions-020.lua
 !/tests/assertions-issues.lua
 !/tests/assertions-followups.lua
+!/tests/assertions-011.lua
 !/tests/run-tests.py
 !/tests/verify-package.py
 !/tests/fixtures/

@@ -4,7 +4,7 @@ Project: https://github.com/Daxaar/BetterLKFrames
 
 Blizzard unit-frame styling for the original **World of Warcraft 3.3.5a client, build 12340** (Interface 30300).
 
-Version **0.2.3-dev** is a development build awaiting client acceptance. It provides larger rounded health bars, class colours, dark decoration, movement/alignment tools and legacy-compatible cast/aura enhancements. It is an original implementation inspired by BetterBlizzFrames feature ideas, not an official port or a copy of that project's code/artwork. No server module is required.
+Version **0.2.4-dev** is a development build awaiting client acceptance. It provides larger rounded health bars, class colours, dark decoration, movement/alignment tools and legacy-compatible cast/aura enhancements. It is an original implementation inspired by BetterBlizzFrames feature ideas, not an official port or a copy of that project's code/artwork. No server module is required.
 
 ## Features
 
@@ -56,7 +56,7 @@ On Frames, **Reset frames** asks for confirmation, restores all movable unit-fra
 ## Limits and known issues
 
 - **Pending:** dead targets can show overlapping duplicate “Dead” text. This development build does not address that report.
-- The changes for issues #1–#5 and #8–#10 await owner in-game acceptance. See [development testing](DEVELOPMENT.md) in the source repository for decisions, build details and a focused checklist.
+- The changes for issues #1–#5 and #8–#11 await owner in-game acceptance. See [development testing](DEVELOPMENT.md) in the source repository for decisions, build details and a focused checklist.
 - Automated Lua 5.1 mocked-API tests pass, but cannot verify actual client rendering, combat taint or every vehicle/focus/arena transition. This development build still needs an in-game loading/settings check.
 - Window rim theming covers recognized narrow decorative texture regions only. It preserves parchment, map tiles, icons and text; some headers/tabs/custom frames remain unchanged or need visual refinement.
 - The custom cooldown restart defect was corrected in 0.2.0: unchanged auras no longer call SetCooldown every quarter-second. Confirm the reported extra flashing is resolved in your client. Native low-duration buff fading is preserved.

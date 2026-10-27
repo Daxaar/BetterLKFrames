@@ -293,6 +293,16 @@ local function defaultPoints(name,e)
     end
     return e.points
 end
+-- SetUserPlaced requires a movable OR resizable frame, even when clearing it.
+-- Only clear an existing native placement. Preserve flags on frames whose native
+-- XML is immovable; SetMovable alone neither moves a frame nor unlocks our handles.
+local function clearUserPlacement(frame)
+    if not frame.SetUserPlaced or not frame:IsUserPlaced() then return end
+    local temporary=not frame:IsMovable() and not frame:IsResizable()
+    if temporary then frame:SetMovable(true) end
+    frame:SetUserPlaced(false)
+    if temporary then frame:SetMovable(false) end
+end
 function addon:Apply()
     if not self.db then return end
     if InCombatLockdown() then
@@ -311,7 +321,7 @@ function addon:Apply()
             (self.db.blizzardLayout and not self.db.positions[name] and e.layoutDB~=self.db) then
             if self.db.blizzardLayout then
                 e.points=defaultPoints(name,e)
-                if e.owner.SetUserPlaced then e.owner:SetUserPlaced(false) end
+                clearUserPlacement(e.owner)
             end
             e.owner:ClearAllPoints()
             for _,point in ipairs(e.points) do e.owner:SetPoint(unpack(point)) end
@@ -373,7 +383,7 @@ function addon:ResetFrames()
         e.points=defaultPoints(name,e)
         e.owner:ClearAllPoints()
         for _,point in ipairs(e.points) do e.owner:SetPoint(unpack(point)) end
-        if e.owner.SetUserPlaced then e.owner:SetUserPlaced(false) end
+        clearUserPlacement(e.owner)
         e.positionApplied=nil;e.layoutDB=self.db
     end
     self:CommitSettings();self:Apply()
