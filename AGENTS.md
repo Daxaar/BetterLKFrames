@@ -12,6 +12,14 @@ Before implementing any issue:
 4. Consider later clarifications in comments alongside the original requirements.
 5. If requirements conflict or are ambiguous, ask the owner before implementing.
 
+## Issue screenshots
+
+For every GitHub Issue, check `tests/screenshots/<issue-number>/` on the `issue-screenshots` branch for supporting images. Review all screenshots before implementation.
+
+These reference images are not part of the addon and must never be included in development or release ZIPs.
+
+Always check this folder when revisiting an issue or its comments, using the current contents of the `issue-screenshots` branch, to see whether any images have been added or updated since the issue was marked ready for testing.
+
 ## Approval and workflow
 
 - Only work on issues carrying the `approved` label.
