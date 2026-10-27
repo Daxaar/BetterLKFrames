@@ -1,0 +1,94 @@
+-- Original v1.1 appearance; all art is generated locally, never copied from BBF.
+local addon=BetterLKFrames
+local media="Interface\\AddOns\\BetterLKFrames\\Media\\"
+local originals=setmetatable({}, {__mode="k"})
+local buttonSkins=setmetatable({}, {__mode="k"})
+local function tint(region,on)
+    if not region or not region.SetVertexColor then return end
+    if not originals[region] then originals[region]={region:GetVertexColor()} end
+    local c=originals[region];local f=on and addon.db.darkness or 1
+    region:SetVertexColor(c[1]*f,c[2]*f,c[3]*f,c[4] or 1)
+end
+function addon:StyleBar(f,power,big)
+    local prefix=power and "Power" or "Health"
+    if not f.roundedBackground then
+        f.roundedBackground=f:CreateTexture(nil,"BACKGROUND");f.roundedBackground:SetAllPoints(f)
+        f.roundedBorder=f:CreateTexture(nil,"OVERLAY");f.roundedBorder:SetAllPoints(f)
+    end
+    if self.db.roundedBars and big then
+        f:SetBackdrop(nil)
+        f.roundedBackground:SetTexture(media..prefix.."Flat");f.roundedBackground:SetVertexColor(.035,.04,.045,1)
+        f.roundedBorder:SetTexture(media..prefix.."Edge")
+        f.roundedBackground:Show();f.roundedBorder:Show()
+        f:SetStatusBarTexture(media..prefix..(self.db.flatBars and "Flat" or "Gradient"))
+    else
+        f.roundedBackground:Hide();f.roundedBorder:Hide()
+        f:SetBackdrop({bgFile="Interface\\Buttons\\WHITE8X8",edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1})
+        f:SetBackdropColor(.025,.025,.025,1);f:SetBackdropBorderColor(0,0,0,1)
+    end
+end
+function addon:LayoutName(e)
+    local above=self.db.enabled and self.db.namesAbove and self.db.bigBars and not e.minor
+    if e.name then
+        if e.nameAlpha==nil then e.nameAlpha=e.name:GetAlpha() end
+        e.name:SetAlpha(above and 0 or e.nameAlpha)
+    end
+    if e.owner.nameBackground then
+        if e.nameBackgroundAlpha==nil then e.nameBackgroundAlpha=e.owner.nameBackground:GetAlpha() end
+        e.owner.nameBackground:SetAlpha(above and 0 or e.nameBackgroundAlpha)
+    end
+    if above then
+        if not e.displayName then e.displayName=e.health:CreateFontString(nil,"OVERLAY") end
+        e.displayName:ClearAllPoints();e.displayName:SetPoint("BOTTOM",e.health,"TOP",0,4)
+        e.displayName:SetFont(STANDARD_TEXT_FONT,self.db.fontSize+1,"OUTLINE")
+        e.displayName:SetWidth(e.health:GetWidth()+20);e.displayName:Show()
+    elseif e.displayName then e.displayName:Hide() end
+end
+function addon:PaintName(e,u)
+    if e.displayName and self.db.namesAbove and self.db.bigBars and not e.minor then
+        e.displayName:SetText(UnitName(u) or "")
+        if e.name then e.displayName:SetTextColor(e.name:GetTextColor()) end
+    end
+end
+local function skinButton(button,enabled,micro)
+    if not button then return end
+    local skin=buttonSkins[button]
+    if not skin and enabled and not InCombatLockdown() then
+        skin=button:CreateTexture(nil,"OVERLAY");skin:SetTexture(media.."ButtonEdge")
+        if micro then
+            -- Legacy microbuttons contain icons in their normal textures: do not tint them.
+            skin:SetPoint("BOTTOMLEFT",button,"BOTTOMLEFT",1,1);skin:SetWidth(26);skin:SetHeight(36)
+        else
+            skin:SetPoint("TOPLEFT",button,"TOPLEFT",-1,1);skin:SetPoint("BOTTOMRIGHT",button,"BOTTOMRIGHT",1,-1)
+        end
+        buttonSkins[button]=skin
+    end
+    if skin then if enabled then skin:Show() else skin:Hide() end end
+    if not micro then
+        local normal=button.GetNormalTexture and button:GetNormalTexture()
+        tint(normal,enabled)
+    end
+end
+function addon:ThemeButtons()
+    local enabled=self.db.enabled and self.db.darkButtons
+    for _,prefix in ipairs({"ActionButton","MultiBarBottomLeftButton","MultiBarBottomRightButton",
+        "MultiBarLeftButton","MultiBarRightButton","BonusActionButton","PetActionButton","ShapeshiftButton"}) do
+        for i=1,12 do skinButton(_G[prefix..i],enabled) end
+    end
+    for i=0,3 do skinButton(_G["CharacterBag"..i.."Slot"],enabled) end
+    skinButton(MainMenuBarBackpackButton,enabled)
+    for _,name in ipairs({"CharacterMicroButton","SpellbookMicroButton","TalentMicroButton","AchievementMicroButton",
+        "QuestLogMicroButton","SocialsMicroButton","PVPMicroButton","LFDMicroButton","MainMenuMicroButton","HelpMicroButton"}) do
+        skinButton(_G[name],enabled,true)
+    end
+    -- Weapon enchants have native duration/tooltip logic; add only the common edge.
+    for i=1,2 do skinButton(_G["TempEnchant"..i],self.db.enabled and self.db.darkAuras,false) end
+end
+function addon:SkinAura(button,f)
+    if not f.skin and button and self.db.enabled and self.db.darkAuras and not InCombatLockdown() then
+        f.skin=f:CreateTexture(nil,"OVERLAY");f.skin:SetTexture(media.."ButtonEdge")
+        f.skin:SetPoint("TOPLEFT",button,"TOPLEFT",-1,1);f.skin:SetPoint("BOTTOMRIGHT",button,"BOTTOMRIGHT",1,-1)
+    end
+    if f.skin then if self.db.enabled and self.db.darkAuras then f.skin:Show() else f.skin:Hide() end end
+    -- Keep native debuff-type/stealable colours and red/gold alert borders intact.
+end

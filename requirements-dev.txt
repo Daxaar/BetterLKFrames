@@ -1,0 +1,2 @@
+# Lua 5.1 runtime used for the mocked legacy-client API tests.
+lupa==2.6

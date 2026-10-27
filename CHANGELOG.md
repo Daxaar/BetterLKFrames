@@ -1,0 +1,33 @@
+# Changelog
+
+## 0.2.1 — 2026-10-27
+
+Rename active addon to BetterLKFrames: folder/TOC, globals, saved-variable names, widget identifiers, media paths, settings titles and `/blkf` / `/betterlkframes` commands. Move development to an independent addon workspace, independent of server tooling. Start fresh account/character settings; no legacy migration or command aliases. Preserve original archives/checksums. Pending dead-target duplicate text remains unfixed; no UI behaviour changes intended.
+
+## 0.2.0 — 2026-10-26
+
+Version numbering returns to pre-1.0 semantic versioning; historical 1.1.0 below was misnumbered and remains archived under that name.
+
+- Fix added aura spirals being reset every quarter-second; update only on changed timing/identity or re-enable. Retain Blizzard's native low-duration fading. Exact reported video symptom not reproduced here; client confirmation pending.
+- Align native cast timer vertically to the spell-name label and match its font, preserving cast data/colour behaviour.
+- Blizzard dialog decoration for settings; dark button/checkbox/slider rims tied to window-theme brightness.
+- Conservative dark rim copies for recognized Blizzard quest/spellbook/character/talent/map/bag/shared-window art. Preserve interiors, map tiles, icons and text; partial coverage and client validation required.
+- Visible counted screen-centred movement grid, separate visibility/grid-snap toggles, centred snapping and adjustable spacing. Grid remains while unlocked.
+- Power default 8 → 11 px without health-bar geometry changes. Keep custom heights other than old default 8.
+- Independent optional per-character settings: copy, fresh addon defaults, native Blizzard preset, resume and return to account scope. Shared named profiles remain available.
+- Small configurable target/focus root-aura-row downward offset, default 4 px, with combat deferral and no accumulating offsets.
+
+
+## 1.1.0 — 2026-10-26
+
+- Original antialiased rounded bar art with a vertical gradient and dark bevel. Refit large bars into the old name-strip area; optional class-coloured names above and native target name-background suppression.
+- Dark individual action-button edges across main/extra/side/pet/stance bars, bag and menu buttons. Preserve icon colours and native proc/checked/cooldown feedback.
+- Common dark player/target/focus buff/debuff edges; yellow player countdowns below icons; weapon enchant edges. Preserve native debuff/stealable and red/gold alert indicators.
+- Movement snapping on release: matching edges/centres, adjacent edges, screen edges/centre and mirrored pairs. Optional fallback grid, live alignment guides and Shift bypass.
+- Keep native cast-bar implementation unchanged from 0.1.0.
+- Preserve positions/scales/profiles on upgrade. New gradient/class-name defaults adopted once. Independent appearance and snapping controls.
+- Expanded Lua 5.1 mock regression coverage; actual client rendering and combat checks remain required.
+
+## 0.1.0 — 2026-10-26
+
+First client-test package: thick player/target/focus bars, class/reaction health colours, dark decoration, settings panel, profiles and frame movement, class names/portraits, text options, cast timers/party cast bars and native aura overlays. Original implementation targeting Interface 30300 and Lua 5.1. Automated mocked API validation; in-game validation pending.

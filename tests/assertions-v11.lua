@@ -1,0 +1,56 @@
+local a=BetterLKFrames
+local count=0
+local function ok(v,name) assert(v,name);count=count+1;print("PASS v1.1 "..name) end
+local function near(x,y) return math.abs(x-y)<.00001 end
+local e=a.frames.PlayerFrame
+ok(e.health.texture:find("HealthGradient")~=nil and e.power.texture:find("PowerGradient")~=nil,"gradient art selected by default")
+ok(e.health.roundedBorder.shown and e.health.roundedBackground.shown,"rounded background and edge enabled")
+ok(e.displayName.text=="Name player" and PlayerName.alpha==0,"separate name label above bars")
+ok(TargetFrame.nameBackground.alpha==0,"native target name strip suppressed")
+ok(ActionButton1.normalTexture.colour[1]==a.db.darkness,"action normal border tinted")
+ok(MultiBarRightButton1.normalTexture.colour[1]==a.db.darkness,"side bar border tinted")
+ok(CharacterBag0Slot.normalTexture.colour[1]==a.db.darkness,"bag border tinted")
+ok(CharacterMicroButton.normalTexture.colour==nil,"microbutton icon texture not tinted")
+BUFFS.player={{"Test aura","","icon",1,nil,10,104,"player",false,false,123}}
+a:UpdateAuras();ok(BuffButton1.blkAura.skin.shown,"common aura edge visible")
+ok(BuffButton1.blkAura.time.points[1][1]=="TOP","player aura timer below icon")
+a:Set("darkAuras",false);a:UpdateAuras();ok(not BuffButton1.blkAura.skin.shown,"aura border independently disabled")
+a:Set("darkButtons",false);ok(ActionButton1.normalTexture.colour[1]==1,"button tint restored independently")
+a:Set("namesAbove",false);ok(PlayerName.alpha==1 and TargetFrame.nameBackground.alpha==1,"name layout toggle restores native labels and strip")
+a:Set("roundedBars",false);ok(not e.health.roundedBorder.shown,"rounding independently disabled")
+a:Set("roundedBars",true);a:Set("flatBars",true);ok(e.health.texture:find("HealthFlat")~=nil,"flat texture retains rounded outline")
+a:Reset()
+local upgraded=a.Normalize({version=1,flatBars=true,classNames=false,positions={PlayerFrame={x=12,y=34}},profiles={old={healthHeight=20}}})
+ok(upgraded.version==3 and not upgraded.flatBars and upgraded.classNames and upgraded.positions.PlayerFrame.x==12 and upgraded.profiles.old,"v0.1 upgrade retains layout and profiles")
+-- Snap calculations against known 1920x1080 viewport and explicit rectangles.
+a.db.snapDistance=10;a.db.snapGrid=false
+for _,f in pairs(a.frames) do f.owner:Hide() end
+local x,y=a:ComputeSnap("PlayerFrame",{x=854,y=10,w=200,h=100},false)
+ok(x==860 and y==0,"screen centre and edge snapping")
+x,y=a:ComputeSnap("PlayerFrame",{x=854,y=10,w=200,h=100},true)
+ok(x==854 and y==10,"Shift bypass leaves coordinates untouched")
+TargetFrame.left=100;TargetFrame.bottom=300;TargetFrame.width=200;TargetFrame.height=100;TargetFrame:Show()
+x,y=a:ComputeSnap("PlayerFrame",{x=105,y=307,w=200,h=100},false)
+ok(x==100 and y==300,"frame matching edge and centre alignment")
+x,y=a:ComputeSnap("PlayerFrame",{x=295,y=307,w=200,h=100},false)
+ok(x==300,"edge-to-edge alignment")
+x,y=a:ComputeSnap("PlayerFrame",{x=1616,y=450,w=200,h=100},false)
+ok(x==1620,"pair mirrored about screen centre")
+a.db.snapGrid=true;TargetFrame:Hide()
+x,y=a:ComputeSnap("PlayerFrame",{x=123,y=237,w=200,h=100},false)
+ok(near((x+100-960)/a.db.gridSize,math.floor((x+100-960)/a.db.gridSize+.5)) and near((y+50-540)/a.db.gridSize,math.floor((y+50-540)/a.db.gridSize+.5)),"screen-centred grid fallback")
+a.db.snapFrames=false;x,y=a:ComputeSnap("PlayerFrame",{x=123,y=237,w=200,h=100},false)
+ok(x==123 and y==237,"snapping disabled leaves coordinates untouched")
+a.db.snapFrames=true
+PlayerFrame:Show();a:SetUnlocked(true)
+e.mover.scripts.OnDragStart();ok(e.dragging and a.guides.shown,"drag creates centre guides")
+e.mover.scripts.OnUpdate(e.mover,.1);e.mover.scripts.OnDragStop()
+ok(not e.dragging and a.guides.shown and e.positionApplied,"drag release saves position and retains unlocked grid")
+e.mover.scripts.OnDragStart();COMBAT=true;a.scripts.OnEvent(a,"PLAYER_REGEN_DISABLED")
+ok(e.stopPending and not e.dragging,"combat hide queues interrupted drag stop")
+a:Set("healthHeight",24);a:PreviewSnap("PlayerFrame");ok(a.pending and not a.guides.shown,"combat defers layout and hides guides")
+COMBAT=false;a.scripts.OnEvent(a,"PLAYER_REGEN_ENABLED")
+a:Set("enabled",false);a:UpdateAuras()
+ok(PlayerName.alpha==1 and TargetFrame.nameBackground.alpha==1 and ActionButton1.normalTexture.colour[1]==1,"disable restores v1.1 native appearance")
+ok(not BuffButton1.blkAura.skin.shown and not e.displayName.shown,"disable hides v1.1 additions")
+print("TOTAL v1.1 "..count.." assertions passed")
