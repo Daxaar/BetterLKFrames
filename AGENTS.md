@@ -4,6 +4,8 @@
 
 GitHub Issues in `Daxaar/BetterLKFrames` are the authoritative development backlog.
 
+For existing CLI access and headless authentication troubleshooting, read [GITHUB-ACCESS.md](GITHUB-ACCESS.md). Reuse existing authentication before starting another login flow.
+
 Before implementing any issue:
 
 1. Read the complete issue description.
