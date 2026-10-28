@@ -50,7 +50,27 @@ local function edges(path)
     if path=="interface\\worldmap\\ui-worldmapsmall-left" then return "LTB" end
     if path=="interface\\worldmap\\ui-worldmapsmall-right" then return "RTB" end
 end
-addon.WindowEdges=edges
+-- These 384x512 panels are four padded atlas tiles, not solid edge textures.
+-- The visible right/bottom rims sit at x~90/y~178, well inside the tiles.
+-- Copy only the title trim, transparent portrait ring and narrow outer rims;
+-- never tint parchment, equipment slots, model, portrait or spell icons.
+local panelBoxes={
+    LT={{0,0,74,74},{74,14,182,22},{14,74,8,182}},
+    RT={{0,14,96,22},{88,36,8,220}},
+    LB={{14,0,8,176},{14,176,242,8}},
+    RB={{88,0,8,176},{0,176,96,8}},
+}
+local function atlasPanel(path)
+    if type(path)~="string" then return end
+    path=path:lower():gsub("/","\\"):gsub("%.tga$","")
+    local suffix=path:match("^interface\\paperdollinfoframe\\ui%-character%-charactertab%-(.+)$")
+    if suffix then
+        return ({l1="LT",r1="RT",bottomleft="LB",bottomright="RB"})[suffix]
+    end
+    suffix=path:match("^interface\\spellbook\\ui%-spellbookpanel%-(.+)$")
+    if suffix then return ({topleft="LT",topright="RT",botleft="LB",botright="RB"})[suffix] end
+end
+addon.WindowEdges=function(path) return atlasPanel(path) or edges(path) end
 local function uv(c,u,v)
     -- GetTexCoord returns UL, LL, UR, LR pairs (also handles flipped coordinates).
     return (1-u)*((1-v)*c[1]+v*c[3])+u*((1-v)*c[5]+v*c[7]),
@@ -59,7 +79,7 @@ end
 local function update(source)
     if own[source] then return end
     if source:GetObjectType()~="Texture" then return end
-    local path=source:GetTexture();local which=edges(path)
+    local path=source:GetTexture();local panel=atlasPanel(path);local which=panel or edges(path)
     local old=copies[source]
     if not which then if old then for _,t in pairs(old) do t:Hide() end end;return end
     local enabled=addon.db.enabled and addon.db.darkWindows and source:IsShown()
@@ -67,13 +87,21 @@ local function update(source)
     local w,h=source:GetWidth(),source:GetHeight();if not w or not h or w<=0 or h<=0 then return end
     local c={source:GetTexCoord()};if #c~=8 then return end
     if not old then old={};copies[source]=old end
-    local boxes={L={0,0,math.min(16,w),h},R={math.max(0,w-16),0,math.min(16,w),h},
-        T={0,0,w,math.min(12,h)},B={0,math.max(0,h-12),w,math.min(12,h)}}
+    local boxes
+    if panel then
+        boxes={}
+        local tw=panel:find("R") and 128 or 256
+        for i,b in ipairs(panelBoxes[panel]) do boxes[i]={b[1]*w/tw,b[2]*h/256,b[3]*w/tw,b[4]*h/256} end
+    else
+        boxes={L={0,0,math.min(16,w),h},R={math.max(0,w-16),0,math.min(16,w),h},
+            T={0,0,w,math.min(12,h)},B={0,math.max(0,h-12),w,math.min(12,h)}}
+    end
+    for key,t in pairs(old) do if not boxes[key] then t:Hide() end end
     for key,box in pairs(boxes) do
         local t=old[key]
-        if which:find(key) then
+        if panel or which:find(key) then
             if not t and not InCombatLockdown() then
-                t=source:GetParent():CreateTexture(nil,"ARTWORK");old[key]=t;own[t]=true
+                t=source:GetParent():CreateTexture(nil,"OVERLAY");old[key]=t;own[t]=true
             end
             if t then
                 local geometry=path..":"..w..":"..h..":"..table.concat(c,":")

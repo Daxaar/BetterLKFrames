@@ -46,8 +46,12 @@ function addon:BuildOptions()
         pages[#pages+1]=p
         local index=#pages
         local nav=CreateFrame("Button","BetterLKFramesOptionsTab"..index,f,"OptionsFrameTabButtonTemplate")
-        nav:SetID(index);nav:SetText(title);nav:SetPoint("TOPLEFT",18+(index-1)*149,-67)
-        PanelTemplates_TabResize(nav,0,145)
+        nav:SetID(index);nav:SetText(title)
+        -- Native caps already supply padding. Chain to the previous visible tab,
+        -- rather than reserving a fixed quarter of the settings window per label.
+        PanelTemplates_TabResize(nav,0)
+        if index==1 then nav:SetPoint("TOPLEFT",18,-67)
+        else nav:SetPoint("LEFT",self.optionsNavigation[index-1],"RIGHT",2,0) end
         nav:SetScript("OnClick",function() addon:SelectOptionsPage(index) end)
         nav.blkNavigation=true;nav.blkPage=p
         self.optionsNavigation[#self.optionsNavigation+1]=nav
@@ -101,8 +105,9 @@ function addon:BuildOptions()
     check(frames,"powerText","Power values",300,0)
     slider(frames,"healthHeight","Large health-bar height",10,-65,16,30,1)
     slider(frames,"powerHeight","Large power-bar height",315,-65,4,12,1)
-    slider(frames,"frameScale","Unit-frame scale",10,-140,0.65,1.6,0.05,"%.2f")
+    slider(frames,"frameScale","All unit-frame scale",10,-140,0.65,1.6,0.05,"%.2f")
     slider(frames,"fontSize","Bar text size",315,-140,9,16,1)
+    label(frames,"Scale includes player, target, focus, pet, party and other supported unit frames.",0,-185,11)
     button(frames,"Unlock frames",0,-210,140,function() if addon:SetUnlocked(true) then addon:CloseOptions() end end)
     button(frames,"Lock frames",150,-210,140,function() addon:SetUnlocked(false) end)
     button(frames,"Reset frames",300,-210,140,function() StaticPopup_Show("BETTERLKFRAMES_RESET_FRAMES") end)
