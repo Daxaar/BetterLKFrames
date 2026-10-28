@@ -7,7 +7,7 @@ local defaults = {
     enabled = true, bigBars = true, classHealth = true, classNames = true,
     reactionHealth = true, healthGradient = false, flatBars = false,
     darkFrames = true, darkActionBars = true, darkMinimap = true, darkTooltip = false,
-    classPortraits = false, hideCombatFlash = false, hidePvp = false,
+    classPortraits = false, hideCombatFlash = false, hidePvp = false, hideResting = false,
     healthText = true, powerText = true, castTimers = true, partyCastbars = true,
     auraTimers = false, auraSpirals = false, auraWarnings = false,
     healthHeight = 22, powerHeight = 11, darkness = 0.28, frameScale = 1,
@@ -293,6 +293,16 @@ local function defaultPoints(name,e)
     end
     return e.points
 end
+-- SetUserPlaced requires a movable OR resizable frame, even when clearing it.
+-- Only clear an existing native placement. Preserve flags on frames whose native
+-- XML is immovable; SetMovable alone neither moves a frame nor unlocks our handles.
+local function clearUserPlacement(frame)
+    if not frame.SetUserPlaced or not frame:IsUserPlaced() then return end
+    local temporary=not frame:IsMovable() and not frame:IsResizable()
+    if temporary then frame:SetMovable(true) end
+    frame:SetUserPlaced(false)
+    if temporary then frame:SetMovable(false) end
+end
 function addon:Apply()
     if not self.db then return end
     if InCombatLockdown() then
@@ -311,7 +321,7 @@ function addon:Apply()
             (self.db.blizzardLayout and not self.db.positions[name] and e.layoutDB~=self.db) then
             if self.db.blizzardLayout then
                 e.points=defaultPoints(name,e)
-                if e.owner.SetUserPlaced then e.owner:SetUserPlaced(false) end
+                clearUserPlacement(e.owner)
             end
             e.owner:ClearAllPoints()
             for _,point in ipairs(e.points) do e.owner:SetPoint(unpack(point)) end
@@ -373,7 +383,7 @@ function addon:ResetFrames()
         e.points=defaultPoints(name,e)
         e.owner:ClearAllPoints()
         for _,point in ipairs(e.points) do e.owner:SetPoint(unpack(point)) end
-        if e.owner.SetUserPlaced then e.owner:SetUserPlaced(false) end
+        clearUserPlacement(e.owner)
         e.positionApplied=nil;e.layoutDB=self.db
     end
     self:CommitSettings();self:Apply()
@@ -441,8 +451,7 @@ local function auraButton(button,unit,index,debuff)
         if InCombatLockdown() then return end
         local f=CreateFrame("Frame",nil,button);f:SetAllPoints(button);f:SetFrameLevel(button:GetFrameLevel()+5);f:EnableMouse(false)
         f.time=text(f,10);f.time:ClearAllPoints()
-        if unit=="player" then f.time:SetPoint("TOP",button,"BOTTOM",0,-1);f.time:SetTextColor(1,.85,.15)
-        else f.time:SetPoint("BOTTOM",button,"BOTTOM",0,0) end
+        addon:PositionAuraTimer(f.time,button)
         f.edge=CreateFrame("Frame",nil,f);f.edge:SetAllPoints(button);f.edge:SetBackdrop({edgeFile=white,edgeSize=2});f.edge:EnableMouse(false);f.edge:Hide()
         local native=button.cooldown or (button:GetName() and _G[button:GetName().."Cooldown"])
         if not native then
@@ -454,15 +463,38 @@ local function auraButton(button,unit,index,debuff)
     end
     addon:PaintAura(button,button.blkAura,n,duration,expiry,spellId,importantNames[n])
 end
+function addon:PositionAuraTimer(timer,button)
+    timer:ClearAllPoints();timer:SetPoint("BOTTOM",button,"BOTTOM",0,1)
+    timer:SetTextColor(1,1,1)
+end
+function addon:HasOmniCC()
+    return type(IsAddOnLoaded)=="function" and IsAddOnLoaded("OmniCC") and true or false
+end
+function addon:RefreshAuraCounterOwner()
+    local loaded=self:HasOmniCC()
+    if self.omniCCLoaded==loaded then return end
+    self.omniCCLoaded=loaded
+    if self.db then
+        if loaded then
+            for _,f in pairs(self.auras) do
+                f.time:SetText("");rememberAlpha(f.nativeDuration,false)
+            end
+        end
+        self:UpdateAuras()
+        if self.UpdateTestAuras then self:UpdateTestAuras() end
+        if self.RefreshAuraCounterUI then self:RefreshAuraCounterUI() end
+    end
+end
 -- Shared appearance path for genuine auras and isolated visual-only samples.
 function addon:PaintAura(button,f,n,duration,expiry,spellId,important)
     local db=self.db
     if addon.SkinAura then addon:SkinAura(button,f) end
-    rememberAlpha(f.nativeDuration,db.enabled and db.auraTimers)
+    local ownTimers=db.auraTimers and not self:HasOmniCC()
+    rememberAlpha(f.nativeDuration,db.enabled and ownTimers)
     local remaining=expiry and expiry-GetTime() or 0
     if not db.enabled or not n then f:Hide();if f.cooldown then f.cooldown:Hide();f.cooldownExpiry=nil end;return end
     if not f:IsShown() then f:Show() end
-    if db.auraTimers and duration and duration>0 and remaining>0 then
+    if ownTimers and duration and duration>0 and remaining>0 then
         f.time:SetText(remaining>=60 and string.format("%dm",math.ceil(remaining/60)) or string.format("%d",math.ceil(remaining)))
     else f.time:SetText("") end
     if f.cooldown then
@@ -526,6 +558,7 @@ function addon:RegisterCommands()
     end
 end
 addon:SetScript("OnEvent",function(self,event,arg1)
+    if event=="ADDON_LOADED" then self:RefreshAuraCounterOwner() end
     if event=="ADDON_LOADED" and arg1=="BetterLKFrames" then
         self:InitSettings()
         if self.BuildOptions then self:BuildOptions() end

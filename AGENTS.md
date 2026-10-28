@@ -4,6 +4,8 @@
 
 GitHub Issues in `Daxaar/BetterLKFrames` are the authoritative development backlog.
 
+For existing CLI access and headless authentication troubleshooting, read [GITHUB-ACCESS.md](GITHUB-ACCESS.md). Reuse existing authentication before starting another login flow.
+
 Before implementing any issue:
 
 1. Read the complete issue description.
@@ -28,6 +30,21 @@ Always check this folder when revisiting an issue or its comments, using the cur
 - After implementing and testing, mark it `needs-testing`.
 - Keep the issue open until the owner confirms acceptance.
 - Do not introduce unrelated features or fixes without approval.
+
+## Development Round Workflow
+
+At the start of each owner-authorised development round:
+
+1. Identify approved issues in the **Changes Requested** and **Ready** columns.
+2. Read each issue's original description, **all subsequent comments**, screenshots and acceptance-testing feedback.
+3. Prioritise work using the GitHub `priority:*` labels, addressing critical and blocking defects first.
+4. **When issues have equal priority, work on Changes Requested before Ready.** Completing previously attempted work takes precedence over starting new features.
+5. Move issues to **In Progress** when development begins.
+6. Move issues to **Ready for Testing** only when a testable development build is available.
+7. Never close an issue or move it to Done without explicit owner acceptance.
+8. Never independently begin another development round without explicit owner authorisation.
+
+The GitHub Project's Priority field is not authoritative. Use the repository's `priority:*` labels instead.
 
 ## Development and releases
 

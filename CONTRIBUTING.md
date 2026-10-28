@@ -14,7 +14,7 @@ python3 tests/run-tests.py
 python3 tests/verify-package.py
 ```
 
-The final command creates dist/BetterLKFrames-0.2.3-dev.zip, its SHA256 file and a source manifest. The ZIP contains only the addon folder with Lua, TOC, original media, license and user docs. Dependencies, local archives, research and test logs are excluded. Generated dist files are local artifacts; attach reviewed ZIP/checksum files to a GitHub release when publishing a release.
+The final command creates dist/BetterLKFrames-0.2.5-dev.zip, its SHA256 file and a source manifest. The ZIP contains only the addon folder with Lua, TOC, original media, license and user docs. Dependencies, local archives, research and test logs are excluded. Generated dist files are local artifacts; attach reviewed ZIP/checksum files to a GitHub release when publishing a release.
 
 `tools/generate-assets.py` uses only Python's standard library. `tools/preview-assets.py` optionally uses Pillow to render a developer contact sheet; it is not an in-game screenshot. Both write only generated addon/developer artifacts.
 

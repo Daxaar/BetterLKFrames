@@ -106,6 +106,7 @@ ok(next(a.db.positions)==nil and PlayerFrame.points[1][4]==-19,"reset persists a
 -- Focus created later must use defaults even if its native user-placed position was cached.
 FocusFrame=CreateFrame("Button","FocusFrame",UIParent);FocusFrame.unit="focus";FocusFrame.protected=true
 FocusFrame.healthbar=CreateFrame("StatusBar","FocusFrameHealthBar",FocusFrame)
+FocusFrame:SetMovable(true) -- Native FocusFrame is movable in 12340 XML.
 FocusFrame:SetPoint("CENTER",UIParent,"CENTER",500,300);FocusFrame:SetUserPlaced(true)
 a:Apply()
 ok(FocusFrame.points[1][4]==250 and FocusFrame.points[1][5]==-240 and not FocusFrame.userPlaced,"late-discovered focus restores native rather than cached custom anchor")

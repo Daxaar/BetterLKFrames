@@ -2,7 +2,7 @@
 COMBAT=false; NOW=100; CREATIONS=0
 local methods={}
 local function geometry(self) if COMBAT and self.protected then error("protected geometry in combat") end end
-function methods:GetName() return self.name end
+function methods:GetName() return self.frameName end
 function methods:SetScript(event,fn) self.scripts[event]=fn end
 function methods:GetScript(event) return self.scripts[event] end
 function methods:HookScript(event,fn)
@@ -62,6 +62,10 @@ end
 function methods:GetPushedTexture() return self.pushedTexture end
 function methods:SetJustifyH(x) self.justify=x end
 function methods:SetMovable(x) geometry(self);self.movable=x end
+function methods:IsMovable() return self.movable end
+function methods:SetResizable(x) geometry(self);self.resizable=x end
+function methods:IsResizable() return self.resizable end
+function methods:IsUserPlaced() return self.userPlaced end
 function methods:StartMoving() geometry(self);self.moving=true end
 function methods:StopMovingOrSizing() geometry(self);self.moving=false end
 function methods:RegisterForDrag(...) self.drag={...} end
@@ -83,8 +87,8 @@ function methods:CreateTexture(name,layer) local t=CreateFrame("Texture",name,se
 function methods:CreateFontString(name,layer) return CreateFrame("FontString",name,self) end
 function CreateFrame(kind,name,parent,template)
  CREATIONS=CREATIONS+1
- local f=setmetatable({kind=kind,name=name,parent=parent,scripts={},events={},alpha=1,scale=1,
- width=119,height=12,level=1,shown=true,points={}}, {__index=methods})
+ local f=setmetatable({kind=kind,name=name,frameName=name,parent=parent,scripts={},events={},alpha=1,scale=1,
+ width=119,height=12,level=1,shown=true,points={},movable=false,resizable=false,userPlaced=false}, {__index=methods})
  if name then _G[name]=f end
  if parent then
   local key=(kind=="Texture" or kind=="FontString") and "regions" or "children"
@@ -143,7 +147,7 @@ local function unitFrame(name,unit)
  CreateFrame("FontString",name.."TextureFrameManaBarText",f)
  return f
 end
-unitFrame("PlayerFrame","player");unitFrame("TargetFrame","target");unitFrame("PartyMemberFrame1","party1")
+unitFrame("PlayerFrame","player");PlayerFrame:SetMovable(true);unitFrame("TargetFrame","target");unitFrame("PartyMemberFrame1","party1")
 PlayerPortrait=PlayerFrame.portrait;PlayerName=PlayerFrame.name
 for _,n in ipairs({"PlayerFrameTexture","TargetFrameTextureFrameTexture","MainMenuBarTexture0","MinimapBorder"}) do CreateFrame("Texture",n,UIParent) end
 CastingBarFrame=CreateFrame("StatusBar","CastingBarFrame",UIParent);CastingBarFrame.unit="player";CastingBarFrame.scale=.8;CastingBarFrame.protected=true
@@ -187,7 +191,11 @@ function OpenTestMenu(frame) frame.items={};OPEN_MENU=frame;frame.initialize();r
 function CloseDropDownMenus() OPEN_MENU=nil end
 function methods:LockHighlight() self.highlightLocked=true end
 function methods:UnlockHighlight() self.highlightLocked=false end
-function methods:SetUserPlaced(value) geometry(self);self.userPlaced=value end
+function methods:SetUserPlaced(value)
+ geometry(self)
+ if not self:IsMovable() and not self:IsResizable() then error("Frame "..(self:GetName() or "unnamed").." is not movable or resizable") end
+ self.userPlaced=value;self.userPlacedCalls=(self.userPlacedCalls or 0)+1
+end
 
 -- Match the original StaticPopup lifecycle, including its truthy-return contract.
 function StaticPopup_Show(key)
@@ -219,3 +227,6 @@ function PlayerFrame_UpdateStatus()
  else PlayerRestIcon:Hide();PlayerRestGlow:Hide() end
  if VEHICLE then PlayerLevelText:Hide() else PlayerLevelText:Show() end
 end
+
+LOADED_ADDONS={}
+function IsAddOnLoaded(name) return LOADED_ADDONS[name] and true or false end

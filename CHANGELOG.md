@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.5-dev — authorised follow-up round, awaiting owner testing
+
+- Refs #4: Clear the profile name only after successful account/private creation; keep failed input and selected configuration intact.
+- Refs #1: Reverify Aura time remaining is unchecked for genuinely fresh/default settings. Preserve explicit saved preferences; no forced reset/migration.
+- Refs #8: Put both real and test countdown text inside icons. Use the original target/focus aura routines with isolated scratch frames and mirror usable vacant player slots. Never cover occupied real aura icons. Replace detached target/focus boxes with one labelled player fallback where needed.
+- Refs #10: Add saved Hide resting Zzz indicator checkbox, initially unchecked; restore native resting display immediately when off.
+- Refs #13: Detect loaded OmniCC, suppress only our aura numbers and explain the saved-preference override below Show test auras. Keep cast counters, other aura visuals and saved choices intact.
+- Add native-layout contract, creation/default/profile and OmniCC load-order/isolation regressions. Original client layout routines were also exercised locally outside the repository; no in-game testing of this iteration is claimed.
+
+
+## 0.2.4-dev — priority Apply blocker, awaiting owner acceptance
+
+- Refs #11: Correct both native-placement clearing paths to respect the original client's movable/resizable precondition. Skip already-cleared placement; temporarily grant mobility only to clear stale placement when necessary, then restore it. No suppressed errors or permanent movement-flag changes.
+- Add strict SetUserPlaced preconditions to the mock and fresh-login regressions for all settings tabs, later apply stages, profile/geometry persistence, reset, movement and combat deferral. Existing feature changes are carried forward without unrelated implementation.
+
+
 ## 0.2.3-dev — awaiting owner in-game acceptance
 
 - Refs #4: Keep original shared account settings permanently selectable in the dropdown without copying over them.

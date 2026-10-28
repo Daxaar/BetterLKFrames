@@ -2,7 +2,7 @@
 ## Title: BetterLKFrames
 ## Notes: Thicker Blizzard health bars, class colours, dark decoration and Wrath-compatible frame tools.
 ## Author: Gromit
-## Version: 0.2.3-dev
+## Version: 0.2.5-dev
 ## SavedVariables: BetterLKFramesDB
 ## SavedVariablesPerCharacter: BetterLKFramesCharDB
 ## OptionalDeps: Blizzard_ArenaUI
