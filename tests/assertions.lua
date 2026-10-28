@@ -18,7 +18,7 @@ ok(a.frames.PartyMemberFrame1.health.height==12,"secondary bars retain native he
 ok(a.frames.PartyMemberFrame1.health.text.text=="80%","secondary health text fits narrow bars")
 a:Set("bigBars",false);ok(e.health.height==12 and e.power.height==12,"normal bar geometry option")
 a:Set("bigBars",true)
-a:Set("classPortraits",true);ok(PlayerPortrait.texture:find("CharacterCreate")~=nil,"class portrait option")
+a:Set("classPortraits",true);ok(PlayerPortrait.texture:find("UI%-Classes%-Circles")~=nil,"class portrait option")
 a:Set("classPortraits",false);ok(PlayerPortrait.texture=="portrait:player","portrait restored")
 COMBAT=true;a:Set("healthHeight",27);ok(a.pending and e.health.height==22,"combat layout change deferred")
 event("UNIT_RAGE");a.scripts.OnUpdate(a,.3)
@@ -37,6 +37,7 @@ a:UpdateCasts();ok(a.castbars[1].value==3 and a.castbars[1].barColour[1]==.5,"le
 CHANNELS.party1=nil;a:UpdateCasts();ok(not a.castbars[1].shown,"idle party cast bar hidden")
 BUFFS.player={{"Test aura","","icon",1,nil,10,104,"player",false,false,123}}
 BUFFS.target={{"Permanent","","icon",1,nil,0,0,"target",false,false,7}}
+a:Set("auraTimers",true);a:Set("auraSpirals",true);a:Set("auraWarnings",true)
 a:UpdateAuras();ok(BuffButton1.blkAura.time.text=="4" and BuffButton1.blkAura.edge.shown,"aura timer and expiry warning")
 ok(BuffButton1.duration.alpha==0,"duplicate native player aura timer hidden")
 ok(BuffButton1.blkAura.cooldown.cooldown[1]==94,"missing aura spiral added")
@@ -44,7 +45,7 @@ ok(TargetFrameBuff1.blkAura.cooldown==nil,"existing native aura spiral preserved
 ok(TargetFrameBuff1.blkAura.time.text=="","permanent aura has no countdown")
 a:Command("aura 123");a:UpdateAuras();ok(BuffButton1.blkAura.edge.borderColour[2]==.8,"important aura gold border")
 BUFFS.player={};a:UpdateAuras();ok(not BuffButton1.blkAura.shown and not BuffButton1.blkAura.cooldown.shown,"removed aura overlay and cooldown hidden")
-a:Profile("save","Test");a:Set("healthHeight",20);a:Profile("load","Test");ok(a.db.healthHeight==27,"profile settings round trip")
+a:Profile("save","Test");a:Set("healthHeight",20);a:Profile("load","Test");ok(a.db.healthHeight==20,"active named profile edits persist when reselected")
 a.db.positions.PlayerFrame={x=350,y=220};a:Apply();ok(e.positionApplied and e.owner.points[1][1]=="BOTTOMLEFT","saved frame position applied")
 a:Set("frameScale",1.25);ok(near(e.owner.points[1][4],280),"saved UIParent coordinates account for frame scaling")
 a:Set("frameScale",1)
@@ -60,5 +61,5 @@ a:OpenOptions();ok(a.options.shown and OPTIONS_CATEGORY.name=="BetterLKFrames","
 a:OpenOptions();ok(not a.options.shown,"settings panel toggles")
 a:Set("enabled",true);a:Set("hidePvp",true);ok(PlayerPVPIcon.alpha==0,"player PvP icon option uses Wrath texture name")
 a:Set("hidePvp",false);ok(PlayerPVPIcon.alpha==1,"player PvP icon restored")
-a:Reset();ok(a.db.healthHeight==22 and next(a.db.profiles)==nil,"reset restores defaults and clears profiles")
+a:CharacterProfile("account");a:Reset();ok(a.db.healthHeight==22 and next(a.db.profiles)==nil,"reset restores defaults and clears profiles")
 print("TOTAL "..tests.." assertions passed")

@@ -10,6 +10,13 @@
 !/LICENSE
 !/CONTRIBUTING.md
 !/AGENTS.md
+!/DEVELOPMENT.md
+!/GITHUB-ACCESS.md
+!/.github/
+/.github/*
+!/.github/workflows/
+/.github/workflows/*
+!/.github/workflows/development.yml
 !/requirements-dev.txt
 !/Media/
 /Media/*
@@ -20,6 +27,10 @@
 !/tests/assertions.lua
 !/tests/assertions-v11.lua
 !/tests/assertions-020.lua
+!/tests/assertions-issues.lua
+!/tests/assertions-followups.lua
+!/tests/assertions-011.lua
+!/tests/assertions-round.lua
 !/tests/run-tests.py
 !/tests/verify-package.py
 !/tests/fixtures/

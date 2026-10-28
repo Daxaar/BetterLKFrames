@@ -7,15 +7,15 @@ local defaults = {
     enabled = true, bigBars = true, classHealth = true, classNames = true,
     reactionHealth = true, healthGradient = false, flatBars = false,
     darkFrames = true, darkActionBars = true, darkMinimap = true, darkTooltip = false,
-    classPortraits = false, hideCombatFlash = false, hidePvp = false,
+    classPortraits = false, hideCombatFlash = false, hidePvp = false, hideResting = false,
     healthText = true, powerText = true, castTimers = true, partyCastbars = true,
-    auraTimers = true, auraSpirals = true, auraWarnings = true,
+    auraTimers = false, auraSpirals = false, auraWarnings = false,
     healthHeight = 22, powerHeight = 11, darkness = 0.28, frameScale = 1,
     castScale = 1, fontSize = 11, warningSeconds = 5,
-    darkWindows = true, showGrid = true, auraOffset = 4,
-    roundedBars = true, namesAbove = true, darkButtons = true, darkAuras = true,
+    darkWindows = true, showGrid = true, auraOffset = 0,
+    roundedBars = true, namesAbove = true, darkButtons = true, darkAuras = false,
     snapFrames = true, snapGrid = false, showGuides = true, snapDistance = 10, gridSize = 32,
-    positions = {}, importantSpells = {}, profiles = {}, version = 3,
+    blizzardLayout = false, positions = {}, importantSpells = {}, profiles = {}, version = 3,
 }
 addon.defaults = defaults
 addon.frames, addon.castbars, addon.auras = {}, {}, {}
@@ -104,7 +104,7 @@ local function portrait(entry)
         local _, class = UnitClass(unit)
         local coords = CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[class]
         if coords then
-            t:SetTexture("Interface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes")
+            t:SetTexture("Interface\\TargetingFrame\\UI-Classes-Circles")
             t:SetTexCoord(unpack(coords)); entry.classPortrait = true; return
         end
     end
@@ -203,6 +203,7 @@ function addon:Theme()
     if self.ThemeButtons then self:ThemeButtons() end
     if self.ThemeWindows then self:ThemeWindows() end
     if self.ThemeOptions then self:ThemeOptions() end
+    if self.UpdateRestBadge then self:UpdateRestBadge() end
     tint(MinimapBorder,self.db.enabled and self.db.darkMinimap)
     tint(MinimapBorderTop,self.db.enabled and self.db.darkMinimap)
     for _, n in ipairs({"CastingBarFrameBorder","PetCastingBarFrameBorder","TargetFrameSpellBarBorder","FocusFrameSpellBarBorder"}) do
@@ -213,6 +214,7 @@ local function savePosition(name)
     local e = addon.frames[name]; local f = e.owner
     local ratio = f:GetEffectiveScale()/UIParent:GetEffectiveScale()
     addon.db.positions[name] = {x=f:GetLeft()*ratio,y=f:GetBottom()*ratio}
+    addon:CommitSettings()
 end
 function addon:CreateMover(name,e)
     if e.mover then return end
@@ -245,13 +247,61 @@ function addon:SetUnlocked(value)
     if InCombatLockdown() then self:Message("Frame movement is unavailable during combat."); return false end
     if value and not self.db.enabled then self:Message("Enable the addon before moving frames.");return false end
     self.unlocked = value
+    if not self.unlockEscape then
+        local escape=CreateFrame("Frame","BetterLKFramesUnlockEscape",UIParent)
+        self.unlockEscape=escape;escape:Hide();escape:EnableMouse(false)
+        table.insert(UISpecialFrames,"BetterLKFramesUnlockEscape")
+        escape:SetScript("OnHide",function()
+            if addon.unlocked and not InCombatLockdown() then
+                addon:SetUnlocked(false);addon.reopenFrames=true
+            end
+        end)
+    end
+    if value then self.unlockEscape:Show() else self.unlockEscape:Hide() end
     for name,e in pairs(self.frames) do
         self:CreateMover(name,e)
         if value and e.owner:IsShown() then e.mover:Show() else e.mover:Hide() end
     end
     if self.ShowMoveGuides then self:ShowMoveGuides(value) end
-    self:Message(value and "Drag green handles; snap on release. Hold Shift to bypass. /blkf lock when finished." or "Frames locked.")
+    self:Message(value and "Drag green handles; snap on release. Hold Shift to bypass. /bf lock when finished." or "Frames locked.")
     return true
+end
+-- Native 12340 anchors. Boss positioning is also refreshed by Blizzard on reset.
+local function defaultPoints(name,e)
+    local offsets={PlayerFrame={-19,-4},TargetFrame={250,-4},FocusFrame={250,-240},PetFrame={80,-60}}
+    if offsets[name] then return {{"TOPLEFT",UIParent,"TOPLEFT",unpack(offsets[name])}} end
+    if name=="FocusFrameToT" and FocusFrame and FocusFrame.smallSize then
+        return {{"BOTTOMRIGHT",FocusFrame,"BOTTOMRIGHT",-13,-17}}
+    end
+    if name=="TargetFrameToT" or name=="FocusFrameToT" then
+        return {{"BOTTOMRIGHT",e.owner:GetParent(),"BOTTOMRIGHT",-35,-10}}
+    end
+    local party=tonumber(name:match("^PartyMemberFrame(%d)$"))
+    if party==1 then return {{"TOPLEFT",UIParent,"TOPLEFT",10,-160}} end
+    if party and _G["PartyMemberFrame"..(party-1).."PetFrame"] then
+        return {{"TOPLEFT",_G["PartyMemberFrame"..(party-1).."PetFrame"],"BOTTOMLEFT",-23,-10}}
+    end
+    local boss=tonumber(name:match("^Boss(%d)TargetFrame$"))
+    if boss==1 then return {{"TOPRIGHT",UIParent,"TOPRIGHT",55,-236}} end
+    if boss and _G["Boss"..(boss-1).."TargetFrame"] then
+        return {{"TOPLEFT",_G["Boss"..(boss-1).."TargetFrame"],"BOTTOMLEFT",0,10}}
+    end
+    local arena=tonumber(name:match("^ArenaEnemyFrame(%d)$"))
+    if arena==1 then return {{"TOPRIGHT",e.owner:GetParent(),"TOPRIGHT",-2,0}} end
+    if arena and _G["ArenaEnemyFrame"..(arena-1)] then
+        return {{"TOP",_G["ArenaEnemyFrame"..(arena-1)],"BOTTOM",0,-20}}
+    end
+    return e.points
+end
+-- SetUserPlaced requires a movable OR resizable frame, even when clearing it.
+-- Only clear an existing native placement. Preserve flags on frames whose native
+-- XML is immovable; SetMovable alone neither moves a frame nor unlocks our handles.
+local function clearUserPlacement(frame)
+    if not frame.SetUserPlaced or not frame:IsUserPlaced() then return end
+    local temporary=not frame:IsMovable() and not frame:IsResizable()
+    if temporary then frame:SetMovable(true) end
+    frame:SetUserPlaced(false)
+    if temporary then frame:SetMovable(false) end
 end
 function addon:Apply()
     if not self.db then return end
@@ -267,11 +317,17 @@ function addon:Apply()
     end
     for name,e in pairs(self.frames) do
         if e.stopPending then e.owner:StopMovingOrSizing();e.stopPending=nil;e.dragging=nil end
-        if e.positionApplied and (not self.db.enabled or not self.db.positions[name]) then
+        if (e.positionApplied and (not self.db.enabled or not self.db.positions[name])) or
+            (self.db.blizzardLayout and not self.db.positions[name] and e.layoutDB~=self.db) then
+            if self.db.blizzardLayout then
+                e.points=defaultPoints(name,e)
+                clearUserPlacement(e.owner)
+            end
             e.owner:ClearAllPoints()
             for _,point in ipairs(e.points) do e.owner:SetPoint(unpack(point)) end
             e.positionApplied=nil
         end
+        e.layoutDB=self.db
         for obj,alpha in pairs(e.nativeTexts) do obj:SetAlpha(self.db.enabled and 0 or alpha) end
         e.owner:SetScale(e.originalScale*(self.db.enabled and self.db.frameScale or 1))
         if self.db.enabled then
@@ -308,6 +364,7 @@ function addon:Apply()
     if self.unlocked and self.ShowMoveGuides then self:ShowMoveGuides(true) end
     self:Theme();self:SetupCasts();self:Refresh()
     if self.RefreshAuraOffset then self:RefreshAuraOffset() end
+    if self.UpdateTestAuras then self:UpdateTestAuras() end
     dirty = false
     return true
 end
@@ -315,23 +372,24 @@ function addon:Set(key,value)
     self.db[key]=value;self.db=normalize(self.db);self:CommitSettings();self:Apply()
 end
 function addon:Reset()
-    if InCombatLockdown() then self:Message("Reset is unavailable during combat.");return end
-    local profiles=self.db.profiles
-    self.db=copy(defaults)
-    if BetterLKFramesCharDB and BetterLKFramesCharDB.useCharacter then self.db.profiles=profiles end
-    self:CommitSettings();self:Apply()
-    self:Message("Defaults restored for the active settings scope.")
+    return self:ResetSettings()
 end
-function addon:Profile(mode,name)
-    if not name or name=="" then self:Message("Use /blkf profile save NAME or /blkf profile load NAME.");return end
-    if mode=="save" then
-        local d=copy(self.db);d.profiles=nil;self.db.profiles[name]=d;self:Message("Saved profile "..name)
-    elseif mode=="load" then
-        local profile=self.db.profiles[name]
-        if not profile then self:Message("Unknown profile: "..name);return end
-        local profiles=self.db.profiles;self.db=normalize(copy(profile));self.db.profiles=profiles
-        self:CommitSettings();self:Apply();self:Message("Loaded profile "..name)
+function addon:ResetFrames()
+    if InCombatLockdown() then self:Message("Reset frames outside combat.");return false end
+    self:SetUnlocked(false)
+    self.db.positions={};self.db.blizzardLayout=true
+    for name,e in pairs(self.frames) do
+        if e.dragging or e.stopPending then e.owner:StopMovingOrSizing();e.dragging=nil;e.stopPending=nil end
+        e.points=defaultPoints(name,e)
+        e.owner:ClearAllPoints()
+        for _,point in ipairs(e.points) do e.owner:SetPoint(unpack(point)) end
+        clearUserPlacement(e.owner)
+        e.positionApplied=nil;e.layoutDB=self.db
     end
+    self:CommitSettings();self:Apply()
+    if UIParent_ManageFramePositions then UIParent_ManageFramePositions() end
+    self:Message("Active layout reset to Blizzard positions. Frames locked; other settings preserved.")
+    return true
 end
 function addon:SetupCasts()
     for _,name in ipairs({"CastingBarFrame","PetCastingBarFrame","TargetFrameSpellBar","FocusFrameSpellBar"}) do
@@ -393,8 +451,7 @@ local function auraButton(button,unit,index,debuff)
         if InCombatLockdown() then return end
         local f=CreateFrame("Frame",nil,button);f:SetAllPoints(button);f:SetFrameLevel(button:GetFrameLevel()+5);f:EnableMouse(false)
         f.time=text(f,10);f.time:ClearAllPoints()
-        if unit=="player" then f.time:SetPoint("TOP",button,"BOTTOM",0,-1);f.time:SetTextColor(1,.85,.15)
-        else f.time:SetPoint("BOTTOM",button,"BOTTOM",0,0) end
+        addon:PositionAuraTimer(f.time,button)
         f.edge=CreateFrame("Frame",nil,f);f.edge:SetAllPoints(button);f.edge:SetBackdrop({edgeFile=white,edgeSize=2});f.edge:EnableMouse(false);f.edge:Hide()
         local native=button.cooldown or (button:GetName() and _G[button:GetName().."Cooldown"])
         if not native then
@@ -404,13 +461,40 @@ local function auraButton(button,unit,index,debuff)
         f.nativeDuration=button.duration or (button:GetName() and _G[button:GetName().."Duration"])
         button.blkAura=f;addon.auras[button]=f
     end
-    local f=button.blkAura;local db=addon.db
+    addon:PaintAura(button,button.blkAura,n,duration,expiry,spellId,importantNames[n])
+end
+function addon:PositionAuraTimer(timer,button)
+    timer:ClearAllPoints();timer:SetPoint("BOTTOM",button,"BOTTOM",0,1)
+    timer:SetTextColor(1,1,1)
+end
+function addon:HasOmniCC()
+    return type(IsAddOnLoaded)=="function" and IsAddOnLoaded("OmniCC") and true or false
+end
+function addon:RefreshAuraCounterOwner()
+    local loaded=self:HasOmniCC()
+    if self.omniCCLoaded==loaded then return end
+    self.omniCCLoaded=loaded
+    if self.db then
+        if loaded then
+            for _,f in pairs(self.auras) do
+                f.time:SetText("");rememberAlpha(f.nativeDuration,false)
+            end
+        end
+        self:UpdateAuras()
+        if self.UpdateTestAuras then self:UpdateTestAuras() end
+        if self.RefreshAuraCounterUI then self:RefreshAuraCounterUI() end
+    end
+end
+-- Shared appearance path for genuine auras and isolated visual-only samples.
+function addon:PaintAura(button,f,n,duration,expiry,spellId,important)
+    local db=self.db
     if addon.SkinAura then addon:SkinAura(button,f) end
-    rememberAlpha(f.nativeDuration,db.enabled and db.auraTimers)
+    local ownTimers=db.auraTimers and not self:HasOmniCC()
+    rememberAlpha(f.nativeDuration,db.enabled and ownTimers)
     local remaining=expiry and expiry-GetTime() or 0
     if not db.enabled or not n then f:Hide();if f.cooldown then f.cooldown:Hide();f.cooldownExpiry=nil end;return end
     if not f:IsShown() then f:Show() end
-    if db.auraTimers and duration and duration>0 and remaining>0 then
+    if ownTimers and duration and duration>0 and remaining>0 then
         f.time:SetText(remaining>=60 and string.format("%dm",math.ceil(remaining/60)) or string.format("%d",math.ceil(remaining)))
     else f.time:SetText("") end
     if f.cooldown then
@@ -422,7 +506,7 @@ local function auraButton(button,unit,index,debuff)
             if not f.cooldown:IsShown() then f.cooldown:Show() end
         else f.cooldown:Hide();f.cooldownExpiry=nil end
     end
-    if spellId and db.importantSpells[spellId] or importantNames[n] then
+    if spellId and db.importantSpells[spellId] or important then
         f.edge:SetBackdropBorderColor(1,0.8,0.1,1);f.edge:Show()
     elseif db.auraWarnings and duration and duration>0 and remaining>0 and remaining<=db.warningSeconds then
         f.edge:SetBackdropBorderColor(1,0.2,0.15,1);f.edge:Show()
@@ -452,39 +536,64 @@ function addon:Command(message)
     elseif cmd=="profile" then local mode,name=string.match(rest,"^(%S+)%s+(.+)$");self:Profile(mode,name)
     elseif cmd=="aura" then
         local id=tonumber(rest)
-        if not id or not GetSpellInfo(id) then self:Message("Use /blkf aura SPELLID with a valid Wrath spell ID.");return end
+        if not id or not GetSpellInfo(id) then self:Message("Use /bf aura SPELLID with a valid Wrath spell ID.");return end
         self.db.importantSpells[id]=not self.db.importantSpells[id];self:Apply();self:Message("Important-aura setting toggled for "..GetSpellInfo(id))
-    elseif cmd=="help" then self:Message("/blkf options | unlock | lock | on | off | reset | aura SPELLID | profile save/load NAME")
+    elseif cmd=="help" then self:Message("/bf options | unlock | lock | on | off | reset | aura SPELLID | profile save/load NAME")
     elseif self.OpenOptions then self:OpenOptions() end
 end
+function addon:RegisterCommands()
+    SlashCmdList.BETTERLKFRAMES=function(msg) self:Command(msg) end
+    for i=1,4 do _G["SLASH_BETTERLKFRAMES"..i]=nil end
+    local index=0
+    for _,alias in ipairs({"/bf","/blkf","/betterlkframes","/gf"}) do
+        local conflict=false
+        for key,value in pairs(_G) do
+            if type(key)=="string" and type(value)=="string" and string.lower(value)==alias then
+                local owner=key:match("^SLASH_(.-)%d+$")
+                if owner and owner~="BETTERLKFRAMES" then conflict=true;break end
+            end
+        end
+        if conflict then self:Message("Command "..alias.." belongs to another addon; leaving it unchanged.")
+        else index=index+1;_G["SLASH_BETTERLKFRAMES"..index]=alias end
+    end
+end
 addon:SetScript("OnEvent",function(self,event,arg1)
+    if event=="ADDON_LOADED" then self:RefreshAuraCounterOwner() end
     if event=="ADDON_LOADED" and arg1=="BetterLKFrames" then
         self:InitSettings()
-        SLASH_BETTERLKFRAMES1="/blkf";SLASH_BETTERLKFRAMES2="/betterlkframes"
-        SlashCmdList.BETTERLKFRAMES=function(msg) self:Command(msg) end
         if self.BuildOptions then self:BuildOptions() end
     elseif event=="PLAYER_LOGIN" then
-        self:InitSettings();self:Apply();self:Message("Loaded. /blkf for settings; /blkf unlock to move frames.")
+        self:InitSettings();self:RegisterCommands();self:Apply();self:Message("Loaded. /bf for settings; /bf unlock to move frames.")
     elseif event=="PLAYER_REGEN_ENABLED" then self:Apply()
-    elseif event=="PLAYER_REGEN_DISABLED" and self.unlocked then
-        for _,e in pairs(self.frames) do if e.mover then e.mover:Hide() end end
-        self.unlocked=false
-        if self.ShowMoveGuides then self:ShowMoveGuides(false) end
+    elseif event=="PLAYER_REGEN_DISABLED" then
+        if self.SetTestAuras then self:SetTestAuras(false) end
+        if self.unlockEscape then self.unlockEscape:Hide() end
+        self.reopenFrames=nil
+        if self.unlocked then
+            for _,e in pairs(self.frames) do if e.mover then e.mover:Hide() end end
+            self.unlocked=false
+            if self.ShowMoveGuides then self:ShowMoveGuides(false) end
+        end
+    elseif event=="PLAYER_LOGOUT" then
+        if self.SetTestAuras then self:SetTestAuras(false) end
     elseif event=="ADDON_LOADED" and self.db then self:Apply() end
     dirty=true
 end)
 for _,ev in ipairs({"ADDON_LOADED","PLAYER_LOGIN","PLAYER_ENTERING_WORLD","PLAYER_REGEN_ENABLED","PLAYER_REGEN_DISABLED",
     "PLAYER_TARGET_CHANGED","PLAYER_FOCUS_CHANGED","UNIT_HEALTH","UNIT_MAXHEALTH","UNIT_MANA","UNIT_MAXMANA",
     "UNIT_RAGE","UNIT_FOCUS","UNIT_ENERGY","UNIT_HAPPINESS","UNIT_RUNIC_POWER",
-    "UNIT_DISPLAYPOWER","UNIT_FACTION","UNIT_NAME_UPDATE","UNIT_AURA","PARTY_MEMBERS_CHANGED","UNIT_PET"}) do addon:RegisterEvent(ev) end
+    "UNIT_DISPLAYPOWER","UNIT_FACTION","UNIT_NAME_UPDATE","UNIT_AURA","PARTY_MEMBERS_CHANGED","UNIT_PET","PLAYER_UPDATE_RESTING","UNIT_LEVEL","PLAYER_LOGOUT"}) do addon:RegisterEvent(ev) end
 addon:SetScript("OnUpdate",function(self,dt)
     if not self.db then return end
+    if self.reopenFrames and not InCombatLockdown() then
+        self.reopenFrames=nil;self:SelectOptionsPage(2);self.options:Show()
+    end
     elapsed=elapsed+dt;auraElapsed=auraElapsed+dt
     if elapsed>=0.1 then
         elapsed=0;if dirty then self:Refresh();dirty=false end
         self:UpdateCasts()
     end
-    if auraElapsed>=0.25 then auraElapsed=0;self:UpdateAuras();self:Theme() end
+    if auraElapsed>=0.25 then auraElapsed=0;self:UpdateAuras();self:Theme();if self.UpdateTestAuras then self:UpdateTestAuras() end end
 end)
 for _,fn in ipairs({"UnitFramePortrait_Update","PlayerFrame_UpdateArt","TargetFrame_CheckClassification"}) do
     if type(_G[fn])=="function" then hooksecurefunc(fn,function() dirty=true end) end

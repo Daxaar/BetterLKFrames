@@ -20,7 +20,7 @@ This is an iterative client-test release, not complete BetterBlizzFrames parity.
 | Hide PvP icons / combat flash | Implemented for registered unit frames; does not hide every combat-related UI element |
 | Cast timers and scale | Implemented for native player/pet/target/focus cast bars |
 | Party cast bars | Implemented using locally visible legacy cast/channel data |
-| Aura countdown / important border | Implemented on native player/target/focus aura buttons |
+| Aura countdown / important border | Implemented on native player/target/focus aura buttons, with optional live visual-only samples |
 | Aura expiry warning | Implemented; configurable 0–10 seconds, not pandemic semantics |
 | Aura cooldown spirals | Adds missing spirals; preserves native spirals |
 | Aura layout | Small configurable 0–12 px target/focus root-row offset; no custom filtering/sorting/resizing/reordering |
@@ -28,7 +28,7 @@ This is an iterative client-test release, not complete BetterBlizzFrames parity.
 | Arena ID names, trinket tracking, DR tracking | Not implemented; Wrath-specific event tracking would need separate work |
 | Combat icons, resting/name/level hiding, configurable element offsets | Not implemented; feasible extension with native-frame checks |
 | Texture packs / fonts / shared-media integration | Not bundled; original procedural rounded gradient/flat art, legacy stock texture and stock font only |
-| Profiles and settings UI | Implemented; account-wide settings with optional per-character overrides and fresh addon/Blizzard presets; shared named profile library |
+| Profiles and settings UI | Implemented; account-wide settings with optional per-character overrides and fresh addon/Blizzard presets; named profile dropdown with account-wide and private per-character entries, persistent selection and safe legacy migration |
 | Profile string import/export | Not implemented; SavedVariables file is the manual transfer mechanism |
 | Modern absorb/heal prediction | No implementation; retail APIs do not exist here. Estimates would need additional combat-log/library logic and would have different accuracy |
 | Retail Edit Mode / specialization / modern arena APIs | No direct backport; equivalent features would need new Wrath-specific implementations |

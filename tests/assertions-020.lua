@@ -7,7 +7,7 @@ local e=a.frames.PlayerFrame
 ok(e.power.height==11 and e.health.height==22,"power height increased independently of health")
 ok(CastingBarFrame.blkTime.points[1][2]==CastingBarFrameText and CastingBarFrame.blkTime.font[2]==12,"cast timer anchored to native label with matching font")
 BUFFS.player={{"Test aura","","icon",1,nil,60,160,"player",false,false,123}}
-a:UpdateAuras()
+a:Set("auraSpirals",true);a:UpdateAuras()
 local f=BuffButton1.blkAura;local calls=f.cooldown.cooldownCalls
 for i=1,20 do NOW=100+i*.25;a:UpdateAuras() end
 ok(f.cooldown.cooldownCalls==calls,"unchanged aura never restarts cooldown during repeated polling")

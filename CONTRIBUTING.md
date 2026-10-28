@@ -14,11 +14,15 @@ python3 tests/run-tests.py
 python3 tests/verify-package.py
 ```
 
-The final command creates dist/BetterLKFrames-0.2.1.zip, its SHA256 file and a source manifest. The ZIP contains only the addon folder with Lua, TOC, original media, license and user docs. Dependencies, local archives, research and test logs are excluded. Generated dist files are local artifacts; attach reviewed ZIP/checksum files to a GitHub release when publishing a release.
+The final command creates dist/BetterLKFrames-0.2.5-dev.zip, its SHA256 file and a source manifest. The ZIP contains only the addon folder with Lua, TOC, original media, license and user docs. Dependencies, local archives, research and test logs are excluded. Generated dist files are local artifacts; attach reviewed ZIP/checksum files to a GitHub release when publishing a release.
 
 `tools/generate-assets.py` uses only Python's standard library. `tools/preview-assets.py` optionally uses Pillow to render a developer contact sheet; it is not an in-game screenshot. Both write only generated addon/developer artifacts.
 
+Development ZIPs for owner acceptance are produced by GitHub Actions from an exact clean commit, with full commit hash and addressed issue numbers. See [DEVELOPMENT.md](DEVELOPMENT.md). Actions artifacts are not formal Releases.
+
 ## Commit and push
+
+Read [AGENTS.md](AGENTS.md). Fetch before work, read the entire open approved issue and all comments/references, wait for the owner to start work, then use an issue-linked branch/PR and the agreed issue labels. Keep issues open pending acceptance; use `Refs #N` without automatic closing keywords.
 
 ```bash
 git status
@@ -26,8 +30,8 @@ git status
 git add -- Core.lua README.md
 python3 tools/check_repository.py
 git diff --cached
-git commit -m "Describe the change"
-git push origin main
+git commit -m "Describe the change (Refs #N)"
+git push -u origin ISSUE_BRANCH
 ```
 
 Use your own GitHub-authorized credentials. Private keys must remain outside the checkout; local credential configuration is not committed. Prefer a GitHub no-reply commit email if you do not want a personal email in commit metadata. Fetch/reconcile remote updates normally; do not force-push over others' history.

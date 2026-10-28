@@ -15,6 +15,7 @@ function addon:RegisterOptionsArt(button)
 end
 function addon:ThemeOptions()
     if not self.options then return end
+    if self.RefreshAuraCounterUI then self:RefreshAuraCounterUI() end
     local on=self.db.enabled and self.db.darkWindows
     local factor=on and self.db.darkness or 1
     self.options:SetBackdropBorderColor(factor,factor,factor,1)
@@ -24,8 +25,8 @@ function addon:ThemeOptions()
         slider:SetBackdropBorderColor(c[1]*factor,c[2]*factor,c[3]*factor,c[4] or 1)
     end
     for _,b in ipairs(self.optionsArt or {}) do
-        tint(b.GetNormalTexture and b:GetNormalTexture(),on)
-        tint(b.GetPushedTexture and b:GetPushedTexture(),on)
+        tint(b.GetNormalTexture and b:GetNormalTexture(),on and not b.blkBrightButton)
+        tint(b.GetPushedTexture and b:GetPushedTexture(),on and not b.blkBrightButton)
         -- Check marks, labels, highlights and slider thumbs remain bright.
     end
 end

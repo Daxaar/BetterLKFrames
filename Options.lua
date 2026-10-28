@@ -9,6 +9,7 @@ end
 local function button(parent,value,x,y,width,callback)
     local f=CreateFrame("Button",nil,parent,"UIPanelButtonTemplate")
     f:SetWidth(width or 110);f:SetHeight(24);f:SetPoint("TOPLEFT",x,y);f:SetText(value)
+    f.blkBrightButton=true
     f:SetScript("OnClick",callback);addon:RegisterOptionsArt(f);return f
 end
 function addon:BuildOptions()
@@ -22,18 +23,28 @@ function addon:BuildOptions()
         tile=true,tileSize=32,edgeSize=32,insets={left=11,right=12,top=12,bottom=11}})
     f:SetBackdropColor(.08,.08,.08,.98)
     label(f,"BetterLKFrames",18,-16,18)
-    label(f,"Original Wrath frame styling | /blkf | Layout changes wait until combat ends.",18,-43,11)
+    label(f,"Original Wrath frame styling | /bf | Layout changes wait until combat ends.",18,-43,11)
     local close=CreateFrame("Button",nil,f,"UIPanelCloseButton");close:SetPoint("TOPRIGHT",-3,-3)
     addon:RegisterOptionsArt(close)
     close:SetScript("OnClick",function() f:Hide() end)
     table.insert(UISpecialFrames,"BetterLKFramesOptions")
     local pages,controls={},{}
+    self.optionsNavigation={}
+    self.optionsPages=pages
+    function addon:SelectOptionsPage(index)
+        for i,p in ipairs(pages) do
+            if i==index then p:Show();self.optionsNavigation[i]:LockHighlight()
+            else p:Hide();self.optionsNavigation[i]:UnlockHighlight() end
+        end
+    end
     local function page(title)
         local p=CreateFrame("Frame",nil,f);p:SetPoint("TOPLEFT",18,-100);p:SetWidth(605);p:SetHeight(470);p:Hide()
         pages[#pages+1]=p
-        button(f,title,18+(#pages-1)*151,-67,145,function()
-            for _,v in ipairs(pages) do v:Hide() end;p:Show()
+        local nav=button(f,title,18+(#pages-1)*151,-67,145,function()
+            for i,v in ipairs(pages) do if v==p then addon:SelectOptionsPage(i);break end end
         end)
+        nav.blkNavigation=true;nav.blkPage=p
+        self.optionsNavigation[#self.optionsNavigation+1]=nav
         return p
     end
     local function check(parent,key,title,x,y)
@@ -42,8 +53,13 @@ function addon:BuildOptions()
         c:SetWidth(24);c:SetHeight(24);c:SetPoint("TOPLEFT",x,y)
         _G[c:GetName().."Text"]:SetText(title)
         addon:RegisterOptionsArt(c)
-        c:SetScript("OnClick",function(self) addon:Set(key,self:GetChecked() and true or false) end)
-        controls[#controls+1]=function() c:SetChecked(addon.db[key]) end
+        c:SetScript("OnClick",function(self)
+            if key=="showTestAuras" then addon:SetTestAuras(self:GetChecked() and true or false)
+            else addon:Set(key,self:GetChecked() and true or false) end
+        end)
+        controls[#controls+1]=function()
+            if key=="showTestAuras" then c:SetChecked(addon.testAuras and true or false) else c:SetChecked(addon.db[key]) end
+        end
         return c
     end
     local function slider(parent,key,title,x,y,lo,hi,step,format)
@@ -68,7 +84,7 @@ function addon:BuildOptions()
         {"darkFrames","Dark unit-frame decoration"},{"darkActionBars","Dark action-bar decoration"},
         {"darkMinimap","Dark minimap border"},{"darkTooltip","Dark tooltip background"},
         {"hideCombatFlash","Hide unit-frame combat flash"},{"hidePvp","Hide unit-frame PvP icons"},
-        {"darkButtons","Dark action/bag/menu button borders"},{"darkAuras","Dark buff/debuff borders"},{"darkWindows","Dark standard window trim"}}
+        {"darkButtons","Dark action/bag/menu button borders"},{"darkAuras","Dark buff/debuff borders"},{"darkWindows","Dark standard window trim"},{"hideResting","Hide resting Zzz indicator"}}
     for i,e in ipairs(entries) do local col=math.floor((i-1)/9);local row=(i-1)%9
         check(appearance,e[1],e[2],col*300,-row*32)
     end
@@ -81,8 +97,17 @@ function addon:BuildOptions()
     slider(frames,"powerHeight","Large power-bar height",315,-65,4,12,1)
     slider(frames,"frameScale","Unit-frame scale",10,-140,0.65,1.6,0.05,"%.2f")
     slider(frames,"fontSize","Bar text size",315,-140,9,16,1)
-    button(frames,"Unlock frames",0,-210,140,function() addon:SetUnlocked(true);f:Hide() end)
+    button(frames,"Unlock frames",0,-210,140,function() if addon:SetUnlocked(true) then f:Hide() end end)
     button(frames,"Lock frames",150,-210,140,function() addon:SetUnlocked(false) end)
+    button(frames,"Reset frames",300,-210,140,function() StaticPopup_Show("BETTERLKFRAMES_RESET_FRAMES") end)
+    StaticPopupDialogs.BETTERLKFRAMES_RESET_FRAMES={
+        text="Restore all movable frames in the active configuration to Blizzard positions? Frames will be locked. Other settings and profiles are preserved.",
+        button1=ACCEPT,button2=CANCEL,OnAccept=function(dialog)
+            -- Hide before layout work, so an error cannot leave a stale confirmation.
+            if dialog then dialog:Hide() end
+            addon:ResetFrames()
+        end,
+        timeout=0,whileDead=true,hideOnEscape=true}
     check(frames,"namesAbove","Names above large bars",0,-245)
     check(frames,"roundedBars","Rounded large-bar edges",300,-245)
     check(frames,"snapFrames","Snap edges / centres on release",0,-280)
@@ -95,29 +120,70 @@ function addon:BuildOptions()
     local casts=page("Casts / auras")
     check(casts,"castTimers","Native cast-bar time remaining",0,0)
     check(casts,"partyCastbars","Party-member cast bars",300,0)
-    check(casts,"auraTimers","Aura time remaining",0,-40)
+    self.auraTimerCheck=check(casts,"auraTimers","Aura time remaining",0,-40)
     check(casts,"auraSpirals","Add missing aura cooldown spirals",300,-40)
     check(casts,"auraWarnings","Expiring-aura red border",0,-80)
-    slider(casts,"castScale","Native cast-bar scale",10,-145,0.6,2,0.05,"%.2f")
-    slider(casts,"warningSeconds","Aura warning seconds",315,-145,0,10,1)
-    slider(casts,"auraOffset","Target/focus aura gap",10,-225,0,12,1)
-    label(casts,"Gold borders mark important spell IDs: /blkf aura SPELLID\nRun the same command again to remove an ID.\nNative cooldown spirals are preserved. No aura filtering or secure reordering.\nParty casting information depends on what the Wrath client can see.",0,-290,12)
+    check(casts,"showTestAuras","Show test auras",300,-80)
+    self.omniCCWarning=label(casts,"OmniCC detected — OmniCC is managing aura countdown text. BetterLKFrames countdown text is disabled.",300,-108,10)
+    self.omniCCWarning:SetWidth(290);self.omniCCWarning:SetHeight(54)
+    self.omniCCWarning:SetJustifyH("LEFT");self.omniCCWarning:SetJustifyV("TOP")
+    self.omniCCWarning:SetTextColor(1,.8,.2);self.omniCCWarning:Hide()
+    self.auraOptionsPage=casts
+    casts:SetScript("OnHide",function() addon:SetTestAuras(false) end)
+    slider(casts,"castScale","Native cast-bar scale",10,-185,0.6,2,0.05,"%.2f")
+    slider(casts,"warningSeconds","Aura warning seconds",315,-185,0,10,1)
+    slider(casts,"auraOffset","Target/focus aura gap",10,-255,0,12,1)
+    label(casts,"Gold borders mark important spell IDs: /bf aura SPELLID\nRun the same command again to remove an ID.\nNative cooldown spirals are preserved. No aura filtering or secure reordering.\nParty casting information depends on what the Wrath client can see.\nTest samples: gold border uses /bf aura 21562. Preview stops in combat.",0,-305,11)
+    self.auraPreviewStatus=label(casts,"",0,-370,10)
+    self.auraPreviewStatus:SetWidth(590);self.auraPreviewStatus:SetJustifyH("LEFT");self.auraPreviewStatus:Hide()
     local profiles=page("Profiles / help")
-    label(profiles,"Profile name",0,-4,12)
+    local current=label(profiles,"",0,-4,12)
+    local selector=CreateFrame("Frame","BetterLKFramesProfileSelect",profiles,"UIDropDownMenuTemplate")
+    selector:SetPoint("TOPLEFT",-15,-28);UIDropDownMenu_SetWidth(selector,340)
+    self.profileSelector=selector
+    UIDropDownMenu_Initialize(selector,function()
+        for _,entry in ipairs(addon:ListProfiles()) do
+            local name,scope=entry.name,entry.scope
+            local info=UIDropDownMenu_CreateInfo();info.text=entry.label
+            local active=BetterLKFramesCharDB.activeProfile
+            info.checked=(scope=="default" and not active and not BetterLKFramesCharDB.useCharacter) or
+                (active and active.name==name and active.scope==scope)
+            info.func=function() addon:Profile("load",name,scope);CloseDropDownMenus() end
+            UIDropDownMenu_AddButton(info)
+        end
+    end)
+    label(profiles,"New profile (copies current settings)",0,-78,12)
     local edit=CreateFrame("EditBox",nil,profiles,"InputBoxTemplate")
-    edit:SetWidth(260);edit:SetHeight(25);edit:SetPoint("TOPLEFT",10,-30);edit:SetAutoFocus(false);edit:SetMaxLetters(40)
+    edit:SetWidth(210);edit:SetHeight(25);edit:SetPoint("TOPLEFT",10,-103);edit:SetAutoFocus(false);edit:SetMaxLetters(40)
+    self.profileNameEdit=edit
     edit:SetScript("OnEscapePressed",function(self) self:ClearFocus() end)
-    button(profiles,"Save profile",290,-30,130,function() addon:Profile("save",edit:GetText());edit:ClearFocus() end)
-    button(profiles,"Load profile",430,-30,130,function() addon:Profile("load",edit:GetText());edit:ClearFocus();f:Hide();f:Show() end)
-    label(profiles,"Saved profiles",0,-85,12)
-    local names=label(profiles,"",0,-110,12);names:SetWidth(580);names:SetJustifyH("LEFT")
+    local newScope="account"
+    local scopeMenu=CreateFrame("Frame","BetterLKFramesProfileScope",profiles,"UIDropDownMenuTemplate")
+    scopeMenu:SetPoint("TOPLEFT",220,-101);UIDropDownMenu_SetWidth(scopeMenu,160)
+    UIDropDownMenu_SetText(scopeMenu,"Account-wide")
+    UIDropDownMenu_Initialize(scopeMenu,function()
+        for _,scope in ipairs({"account","character"}) do
+            local selected=scope
+            local info=UIDropDownMenu_CreateInfo();info.text=scope=="account" and "Account-wide" or "This character"
+            local text=info.text;info.checked=newScope==scope
+            info.func=function() newScope=selected;UIDropDownMenu_SetText(scopeMenu,text);CloseDropDownMenus() end
+            UIDropDownMenu_AddButton(info)
+        end
+    end)
+    self.profileScopeMenu=scopeMenu
+    button(profiles,"Create",430,-103,130,function()
+        if addon:Profile("save",edit:GetText(),newScope) then edit:SetText("") end
+        edit:ClearFocus()
+    end)
     controls[#controls+1]=function()
-        local list={};for name in pairs(addon.db.profiles) do list[#list+1]=name end
-        table.sort(list);names:SetText(#list>0 and table.concat(list,", ") or "No profiles saved yet.")
+        local active=addon:ActiveProfileLabel()
+        current:SetText("Current profile: "..active);UIDropDownMenu_SetText(selector,active)
     end
     local scope=label(profiles,"",0,-155,12)
     controls[#controls+1]=function()
-        scope:SetText(BetterLKFramesCharDB.useCharacter and "Active: this character only" or "Active: shared account settings")
+        local active=BetterLKFramesCharDB.activeProfile
+        if active then scope:SetText(active.scope=="character" and "Editing character profile" or "Editing account-wide profile")
+        else scope:SetText(BetterLKFramesCharDB.useCharacter and "Active: this character only" or "Active: shared account settings") end
     end
     local function changeScope(mode) addon:CharacterProfile(mode);f:Hide();f:Show() end
     button(profiles,"Use account",0,-185,140,function() changeScope("account") end)
@@ -126,10 +192,16 @@ function addon:BuildOptions()
     button(profiles,"Character: defaults",0,-220,180,function() changeScope("defaults") end)
     button(profiles,"Character: Blizzard",190,-220,180,function() changeScope("blizzard") end)
     button(profiles,"Reset active scope",0,-265,180,function() StaticPopup_Show("BETTERLKFRAMES_RESET") end)
-    label(profiles,"Character: defaults starts fresh addon settings for only this character.\nCharacter: Blizzard restores the native appearance for only this character.\nAccount settings and shared named profiles remain available.\nCopy/default/Blizzard replaces this character's previous local settings.\n\n/blkf character account | copy | defaults | blizzard | resume\n/blkf profile save NAME | /blkf profile load NAME\n/blkf on | off | unlock | lock | aura SPELLID",0,-310,12)
-    StaticPopupDialogs.BETTERLKFRAMES_RESET={text="Reset the active scope? Account reset also clears named profiles; character reset preserves them.",button1=ACCEPT,button2=CANCEL,
+    label(profiles,"Character: defaults starts fresh addon settings for only this character.\nCharacter: Blizzard restores the native appearance for only this character.\nLegacy named profiles remain account-wide. New profiles copy current settings.\nCopy/default/Blizzard replaces this character's previous local settings.\n\n/bf character account | copy | defaults | blizzard | resume\n/bf profile save NAME | /bf profile load NAME\n/bf on | off | unlock | lock | aura SPELLID",0,-310,12)
+    StaticPopupDialogs.BETTERLKFRAMES_RESET={text="Reset the active scope? Unnamed account reset clears account profiles. Named/character reset preserves other profiles.",button1=ACCEPT,button2=CANCEL,
         OnAccept=function() addon:Reset();f:Hide() end,timeout=0,whileDead=true,hideOnEscape=true}
-    f:SetScript("OnShow",function() for _,refresh in ipairs(controls) do refresh() end end)
+    function addon:RefreshOptions()
+        for _,refresh in ipairs(controls) do refresh() end
+        self:RefreshAuraCounterUI()
+    end
+    f:SetScript("OnShow",function() addon:RefreshOptions() end)
+    f:SetScript("OnHide",function() addon:SetTestAuras(false) end)
+    self.optionsNavigation[1]:LockHighlight()
     pages[1]:Show();f:Hide()
     addon:ThemeOptions()
     if InterfaceOptions_AddCategory then
@@ -142,4 +214,11 @@ end
 function addon:OpenOptions()
     if not self.options then self:BuildOptions() end
     if self.options:IsShown() then self.options:Hide() else self.options:Show() end
+end
+
+function addon:RefreshAuraCounterUI()
+    if not self.omniCCWarning then return end
+    local loaded=self:HasOmniCC()
+    if loaded then self.omniCCWarning:Show() else self.omniCCWarning:Hide() end
+    _G[self.auraTimerCheck:GetName().."Text"]:SetText(loaded and "Aura time remaining (saved preference)" or "Aura time remaining")
 end
