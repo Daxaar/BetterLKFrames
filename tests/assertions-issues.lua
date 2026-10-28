@@ -28,11 +28,11 @@ ok(upgrade.auraTimers and not upgrade.auraSpirals and upgrade.auraWarnings and u
 -- #2: native template art, native hover/pushed treatment and persistent selected highlight.
 a:Set("darkWindows",true);a:Set("darkness",.1)
 for _,nav in ipairs(a.optionsNavigation) do
-    ok(nav:GetNormalTexture().colour[1]==1,"navigation art remains bright at minimum decoration brightness")
+    ok(nav.template=="OptionsFrameTabButtonTemplate" and nav:GetWidth()==145,"navigation uses legible native tabs")
 end
 local nav=a.optionsNavigation[3];nav:GetScript("OnClick")(nav)
-ok(nav.highlightLocked and nav.blkPage:IsShown() and not a.optionsNavigation[1].highlightLocked,"navigation selection tracks active page")
-a:ThemeOptions();ok(nav.highlightLocked,"periodic theming preserves selected highlight")
+ok(nav.selected and nav.blkPage:IsShown() and not a.optionsNavigation[1].selected,"navigation selection tracks active page")
+a:ThemeOptions();ok(nav.selected,"periodic theming preserves selected tab")
 -- #3: retain existing command owners, register all available aliases contiguously.
 local other=function() end
 SLASH_OTHERADDON1="/BF";SlashCmdList.OTHERADDON=other
@@ -48,7 +48,7 @@ BetterLKFramesDB={version=3,healthHeight=22,profiles={Legacy={version=3,healthHe
 BetterLKFramesCharDB={};a:InitSettings();a:Apply()
 local account=a.accountDB
 local entries=a:ListProfiles()
-ok(#entries==2 and entries[1].scope=="account" and entries[1].name=="Legacy","legacy profile safely retained as account-wide")
+ok(#entries==2 and entries[2].scope=="account" and entries[2].name=="Legacy","legacy profile safely retained as account-wide")
 ok(a:Profile("load","Legacy") and a.db.healthHeight==25 and a.db.auraTimers,"legacy profile loads retained settings")
 a:Set("healthHeight",26);a:InitSettings()
 ok(a.db.healthHeight==26 and BetterLKFramesCharDB.activeProfile.name=="Legacy","selection and edits survive initialization")

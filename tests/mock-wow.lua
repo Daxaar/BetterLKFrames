@@ -15,7 +15,11 @@ function methods:SetVertexColor(...) self.colour={...} end
 function methods:GetVertexColor() return unpack(self.colour or {1,1,1,1}) end
 function methods:GetTextColor() return unpack(self.colour or {1,1,1,1}) end
 function methods:SetTextColor(...) self.colour={...} end
-function methods:SetText(t) self.text=t end
+function methods:SetText(t)
+ self.text=t
+ local label=self.frameName and _G[self.frameName.."Text"]
+ if label and label~=self then label.text=t end
+end
 function methods:GetText() return self.text or "" end
 function methods:SetFont(...) self.font={...} end
 function methods:SetPoint(...) geometry(self);self.points[#self.points+1]={...} end
@@ -94,7 +98,14 @@ function CreateFrame(kind,name,parent,template)
   local key=(kind=="Texture" or kind=="FontString") and "regions" or "children"
   parent[key]=parent[key] or {};table.insert(parent[key],f)
  end
+ f.template=template
  if template=="UIPanelButtonTemplate" then f.normalTexture=CreateFrame("Texture",nil,f) end
+ if template=="OptionsFrameTabButtonTemplate" then
+  for _,suffix in ipairs({"Left","Middle","Right","LeftDisabled","MiddleDisabled","RightDisabled","HighlightTexture"}) do
+   local t=CreateFrame("Texture",name..suffix,f);t.width=12
+  end
+  CreateFrame("FontString",name.."Text",f)
+ end
  if template=="UICheckButtonTemplate" then CreateFrame("FontString",name.."Text",f) end
  if template=="OptionsSliderTemplate" then
   for _,s in ipairs({"Low","High","Text"}) do CreateFrame("FontString",name..s,f) end
@@ -198,16 +209,16 @@ function methods:SetUserPlaced(value)
 end
 
 -- Match the original StaticPopup lifecycle, including its truthy-return contract.
-function StaticPopup_Show(key)
+function StaticPopup_Show(key,arg1,arg2,data)
  LAST_POPUP=key
- local dialog=CreateFrame("Frame",nil,UIParent);dialog.which=key;LAST_DIALOG=dialog
+ local dialog=CreateFrame("Frame",nil,UIParent);dialog.which=key;dialog.data=data;dialog.arg1=arg1;dialog.arg2=arg2;LAST_DIALOG=dialog
  return dialog
 end
 function ClickTestPopup(dialog,index)
  if not dialog:IsShown() then return end
  local info=StaticPopupDialogs[dialog.which]
  local callback=index==1 and info.OnAccept or info.OnCancel
- local keep=callback and callback(dialog)
+ local keep=callback and callback(dialog,dialog.data)
  if not keep then dialog:Hide() end
 end
 function CloseTestSpecialWindows()
@@ -230,3 +241,48 @@ end
 
 LOADED_ADDONS={}
 function IsAddOnLoaded(name) return LOADED_ADDONS[name] and true or false end
+
+function methods:SetParent(parent)
+ if self.parent and self.parent.children then
+  for i=#self.parent.children,1,-1 do if self.parent.children[i]==self then table.remove(self.parent.children,i) end end
+ end
+ self.parent=parent
+ if parent then parent.children=parent.children or {};table.insert(parent.children,self) end
+end
+function methods:GetFrameStrata() return self.strata or (self.parent and self.parent:GetFrameStrata()) or "MEDIUM" end
+function methods:SetScrollChild(child) self.scrollChild=child;child:SetParent(self) end
+function methods:SetVerticalScroll(value) self.verticalScroll=value end
+function methods:GetVerticalScroll() return self.verticalScroll or 0 end
+function methods:IsVisible() return self.shown and (not self.parent or self.parent:IsVisible()) end
+function methods:Enable() self.enabled=true end
+function methods:Disable() self.enabled=false end
+function methods:SetDisabledFontObject(obj) self.disabledFont=obj end
+function methods:GetTextWidth() return #self:GetText()*6 end
+function methods:IsOwned() return false end
+function methods:Raise() self.raised=true end
+GameFontHighlightSmall="GameFontHighlightSmall"
+function PanelTemplates_TabResize(tab,padding,size) tab:SetWidth(size or tab:GetTextWidth()+24);tab:SetHeight(24) end
+function PanelTemplates_SetNumTabs(frame,count) frame.numTabs=count end
+function PanelTemplates_SetTab(frame,index)
+ frame.selectedTab=index
+ for i=1,frame.numTabs do
+  local tab=_G[frame:GetName().."Tab"..i]
+  tab.selected=i==index
+  if tab.selected then tab:Disable() else tab:Enable() end
+ end
+end
+InterfaceOptionsFrame=CreateFrame("Frame","InterfaceOptionsFrame",UIParent);InterfaceOptionsFrame:SetFrameStrata("DIALOG");InterfaceOptionsFrame:Hide()
+InterfaceOptionsFramePanelContainer=CreateFrame("Frame","InterfaceOptionsFramePanelContainer",InterfaceOptionsFrame)
+InterfaceOptionsFramePanelContainer.width=650;InterfaceOptionsFramePanelContainer.height=530
+function HideUIPanel(frame)
+ if frame==InterfaceOptionsFrame and OPTIONS_CATEGORY then OPTIONS_CATEGORY:Hide() end
+ frame:Hide()
+end
+function OpenTestCategory()
+ InterfaceOptionsFrame:Show();OPTIONS_CATEGORY.width=650;OPTIONS_CATEGORY.height=530
+ BetterLKFrames.optionsScroll.width=622;BetterLKFrames.optionsScroll.height=522
+ OPTIONS_CATEGORY:Show()
+end
+function StaticPopup_Hide(key)
+ if LAST_DIALOG and LAST_DIALOG.which==key then LAST_DIALOG:Hide() end
+end

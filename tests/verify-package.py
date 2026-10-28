@@ -7,7 +7,7 @@ args=parser.parse_args()
 base=Path(__file__).resolve().parents[1]; addon=base;dist=base/'dist'
 dist.mkdir(exist_ok=True)
 files=sorted(list(addon.glob('*.lua'))+list(addon.glob('*.toc'))+[addon/n for n in ['README.md','FEATURES.md','PROVENANCE.md','CHANGELOG.md','LICENSE','CONTRIBUTING.md','DEVELOPMENT.md']]+list((addon/'Media').glob('*.tga')))
-expected={'BetterLKFrames.toc','Core.lua','Preview.lua','Profiles.lua','Windows.lua','AuraLayout.lua','Style.lua','Snapping.lua','Options.lua','README.md','FEATURES.md','PROVENANCE.md','CHANGELOG.md','LICENSE','CONTRIBUTING.md','DEVELOPMENT.md'}
+expected={'BetterLKFrames.toc','Core.lua','OptionsHost.lua','Preview.lua','Profiles.lua','Windows.lua','AuraLayout.lua','Style.lua','Snapping.lua','Options.lua','README.md','FEATURES.md','PROVENANCE.md','CHANGELOG.md','LICENSE','CONTRIBUTING.md','DEVELOPMENT.md'}
 assert {p.name for p in files if p.parent==addon}==expected
 text=(addon/'BetterLKFrames.toc').read_text()
 assert '## Interface: 30300' in text

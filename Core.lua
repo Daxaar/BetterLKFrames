@@ -586,7 +586,7 @@ for _,ev in ipairs({"ADDON_LOADED","PLAYER_LOGIN","PLAYER_ENTERING_WORLD","PLAYE
 addon:SetScript("OnUpdate",function(self,dt)
     if not self.db then return end
     if self.reopenFrames and not InCombatLockdown() then
-        self.reopenFrames=nil;self:SelectOptionsPage(2);self.options:Show()
+        self.reopenFrames=nil;self:SelectOptionsPage(2);self:ShowStandaloneOptions()
     end
     elapsed=elapsed+dt;auraElapsed=auraElapsed+dt
     if elapsed>=0.1 then
