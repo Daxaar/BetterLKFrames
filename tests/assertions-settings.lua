@@ -22,7 +22,7 @@ local appearance=a.optionsPages[1];local profilePage=a.optionsPages[4]
 ok(original:GetParent()==UIParent and original:IsVisible() and isEsc()==1,"#17 standalone uses original settings tree and one Escape entry")
 ok(#a.optionsNavigation==4 and original.selectedTab==1,"#16 four native tabs initialise on Appearance")
 for i,tab in ipairs(a.optionsNavigation) do
- ok(tab.template=="OptionsFrameTabButtonTemplate" and tab:GetID()==i and tab:GetWidth()==145 and not tab:GetNormalTexture(),"#16 compact native tab with stable identity "..i)
+ ok(tab.template=="OptionsFrameTabButtonTemplate" and tab:GetID()==i and tab:GetWidth()==tab:GetTextWidth()+24 and not tab:GetNormalTexture(),"#16 compact native tab with stable identity "..i)
  tab:GetScript("OnClick")()
  ok(original.selectedTab==i and a.optionsPages[i]:IsShown(),"#16 selection switches to page "..i)
 end

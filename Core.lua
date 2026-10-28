@@ -15,7 +15,7 @@ local defaults = {
     darkWindows = true, showGrid = true, auraOffset = 0,
     roundedBars = true, namesAbove = true, darkButtons = true, darkAuras = false,
     snapFrames = true, snapGrid = false, showGuides = true, snapDistance = 10, gridSize = 32,
-    blizzardLayout = false, positions = {}, importantSpells = {}, profiles = {}, version = 3,
+    blizzardLayout = false, partyGrouped = false, positions = {}, importantSpells = {}, profiles = {}, version = 3,
 }
 addon.defaults = defaults
 addon.frames, addon.castbars, addon.auras = {}, {}, {}
@@ -259,9 +259,12 @@ function addon:SetUnlocked(value)
     end
     if value then self.unlockEscape:Show() else self.unlockEscape:Hide() end
     for name,e in pairs(self.frames) do
-        self:CreateMover(name,e)
-        if value and e.owner:IsShown() then e.mover:Show() else e.mover:Hide() end
+        if not name:match("^PartyMemberFrame%d$") then
+            self:CreateMover(name,e)
+            if value and e.owner:IsShown() then e.mover:Show() else e.mover:Hide() end
+        elseif e.mover then e.mover:Hide() end
     end
+    if self.UpdatePartyMover then self:UpdatePartyMover(value) end
     if self.ShowMoveGuides then self:ShowMoveGuides(value) end
     self:Message(value and "Drag green handles; snap on release. Hold Shift to bypass. /bf lock when finished." or "Frames locked.")
     return true
@@ -311,6 +314,7 @@ function addon:Apply()
         return false
     end
     self.pending,self.warned = false,false
+    if self.FinishPendingPartyMove then self:FinishPendingPartyMove() end
     self:Discover(); importantNames = {}
     for id, enabled in pairs(self.db.importantSpells) do
         if enabled and type(id)=="number" then local n = GetSpellInfo(id); if n then importantNames[n]=true end end
@@ -360,8 +364,10 @@ function addon:Apply()
         end
         if self.LayoutName then self:LayoutName(e) end
     end
+    if self.ApplyPartyChain then self:ApplyPartyChain() end
     if not self.db.enabled and self.unlocked then self:SetUnlocked(false) end
     if self.unlocked and self.ShowMoveGuides then self:ShowMoveGuides(true) end
+    if self.UpdatePartyMover then self:UpdatePartyMover() end
     self:Theme();self:SetupCasts();self:Refresh()
     if self.RefreshAuraOffset then self:RefreshAuraOffset() end
     if self.UpdateTestAuras then self:UpdateTestAuras() end
@@ -376,8 +382,12 @@ function addon:Reset()
 end
 function addon:ResetFrames()
     if InCombatLockdown() then self:Message("Reset frames outside combat.");return false end
+    if self.partyGroup then
+        self.partyGroup.dragDB=nil;self.partyGroup.dragging=nil;self.partyGroup.stopPending=nil
+        self.partyGroup.owner:StopMovingOrSizing()
+    end
     self:SetUnlocked(false)
-    self.db.positions={};self.db.blizzardLayout=true
+    self.db.positions={};self.db.blizzardLayout=true;self.db.partyGrouped=false
     for name,e in pairs(self.frames) do
         if e.dragging or e.stopPending then e.owner:StopMovingOrSizing();e.dragging=nil;e.stopPending=nil end
         e.points=defaultPoints(name,e)
@@ -567,6 +577,7 @@ addon:SetScript("OnEvent",function(self,event,arg1)
     elseif event=="PLAYER_REGEN_ENABLED" then self:Apply()
     elseif event=="PLAYER_REGEN_DISABLED" then
         if self.SetTestAuras then self:SetTestAuras(false) end
+        if self.HidePartyMoverForCombat then self:HidePartyMoverForCombat() end
         if self.unlockEscape then self.unlockEscape:Hide() end
         self.reopenFrames=nil
         if self.unlocked then
@@ -590,7 +601,11 @@ addon:SetScript("OnUpdate",function(self,dt)
     end
     elapsed=elapsed+dt;auraElapsed=auraElapsed+dt
     if elapsed>=0.1 then
-        elapsed=0;if dirty then self:Refresh();dirty=false end
+        elapsed=0;if dirty then
+            self:Refresh()
+            if self.unlocked and self.UpdatePartyMover then self:UpdatePartyMover() end
+            dirty=false
+        end
         self:UpdateCasts()
     end
     if auraElapsed>=0.25 then auraElapsed=0;self:UpdateAuras();self:Theme();if self.UpdateTestAuras then self:UpdateTestAuras() end end

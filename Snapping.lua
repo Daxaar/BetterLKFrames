@@ -8,6 +8,9 @@ local function rect(frame)
     return {x=left*ratio,y=bottom*ratio,w=frame:GetWidth()*ratio,h=frame:GetHeight()*ratio}
 end
 addon.FrameRect=rect
+function addon:MoveEntry(name)
+    return name=="PartyGroup" and self.partyGroup or self.frames[name]
+end
 function addon:ComputeSnap(name,r,bypass)
     if bypass or not self.db.snapFrames then return r.x,r.y end
     local bestX,bestY=self.db.snapDistance+.001,self.db.snapDistance+.001
@@ -22,7 +25,12 @@ function addon:ComputeSnap(name,r,bypass)
     candidate("x",sw/2-(r.x+r.w/2),sw/2);candidate("y",sh/2-(r.y+r.h/2),sh/2)
     candidate("x",-r.x,0);candidate("x",sw-r.x-r.w,sw)
     candidate("y",-r.y,0);candidate("y",sh-r.y-r.h,sh)
+    local entries={}
     for other,e in pairs(self.frames) do
+        if not other:match("^PartyMemberFrame%d$") then entries[other]=e end
+    end
+    if self.partyGroup then entries.PartyGroup=self.partyGroup end
+    for other,e in pairs(entries) do
         if other~=name and e.owner:IsShown() then
             local o=rect(e.owner)
             if o then
@@ -73,7 +81,7 @@ function addon:ShowMoveGuides(show)
 end
 function addon:PreviewSnap(name)
     if InCombatLockdown() then self:ShowMoveGuides(false);return end
-    local e=self.frames[name];local r=rect(e.owner);if not r then return end
+    local e=self:MoveEntry(name);local r=rect(e.owner);if not r then return end
     local _,_,gx,gy=self:ComputeSnap(name,r,IsShiftKeyDown())
     local f=self.guides;if not f or not self.db.showGuides then return end
     if gx then f.x:ClearAllPoints();f.x:SetPoint("BOTTOMLEFT",UIParent,"BOTTOMLEFT",gx,0);f.x:Show() else f.x:Hide() end
@@ -81,7 +89,7 @@ function addon:PreviewSnap(name)
 end
 function addon:FinishSnap(name)
     if InCombatLockdown() then return end
-    local e=self.frames[name];local r=rect(e.owner);if not r then return end
+    local e=self:MoveEntry(name);local r=rect(e.owner);if not r then return end
     local x,y=self:ComputeSnap(name,r,IsShiftKeyDown())
     local ratio=e.owner:GetEffectiveScale()/UIParent:GetEffectiveScale()
     e.owner:ClearAllPoints();e.owner:SetPoint("BOTTOMLEFT",UIParent,"BOTTOMLEFT",x/ratio,y/ratio)

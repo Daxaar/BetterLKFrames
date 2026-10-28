@@ -28,7 +28,7 @@ ok(upgrade.auraTimers and not upgrade.auraSpirals and upgrade.auraWarnings and u
 -- #2: native template art, native hover/pushed treatment and persistent selected highlight.
 a:Set("darkWindows",true);a:Set("darkness",.1)
 for _,nav in ipairs(a.optionsNavigation) do
-    ok(nav.template=="OptionsFrameTabButtonTemplate" and nav:GetWidth()==145,"navigation uses legible native tabs")
+    ok(nav.template=="OptionsFrameTabButtonTemplate" and nav:GetWidth()==nav:GetTextWidth()+24,"navigation uses legible native tabs")
 end
 local nav=a.optionsNavigation[3];nav:GetScript("OnClick")(nav)
 ok(nav.selected and nav.blkPage:IsShown() and not a.optionsNavigation[1].selected,"navigation selection tracks active page")

@@ -2,7 +2,7 @@
 
 This is an iterative client-test release, not complete BetterBlizzFrames parity. “Implemented” means present in this package and covered where feasible by automated checks; all visual features still need in-game verification.
 
-| Feature | 0.2.1 status / limits |
+| Feature | Current development status / limits |
 | --- | --- |
 | Thicker health bars | Implemented: player/target/focus, configurable heights; secondary bars retain native height |
 | Class health colours | Implemented on available native unit frames; PCs only, NPC reaction/gradient options |
@@ -11,9 +11,9 @@ This is an iterative client-test release, not complete BetterBlizzFrames parity.
 | Individual button borders | Implemented for main/extra/side action bars, pet/stance buttons, bags and legacy menu buttons; icons stay untinted |
 | Buff/debuff borders | Implemented for player/target/focus aura buttons and weapon enchant edges; native type/alert signals retained |
 | Snap movement / guides | Implemented: edges, centres, mirrored pair, screen centre/edges, visible screen-centred counted grid, optional grid-centre snapping and Shift bypass; snapping on release |
-| Standard window rims | Added: recognized native quest/spellbook/character/talent/map/bag rims and shared frame pieces; partial decorative coverage, not every header/tab/window |
+| Standard window rims | Added: recognized native quest/spellbook/character/talent/map/bag rims and shared frame pieces; native Character/Spellbook atlas trim coordinates; partial decorative coverage, not every header/tab/window |
 | Settings window decoration | Blizzard dialog border; button/checkbox/slider trim follows window dark-mode brightness |
-| Frame scaling/moving | Implemented outside combat, saved positions, lock and restore |
+| Frame scaling/moving | Implemented outside combat, saved positions, lock and restore; party group uses one solo-visible placement preview, applies on release and retains pet-aware chaining. One all-unit scale includes party frames |
 | Class-coloured names | Implemented; optional |
 | Class portraits | Implemented using client class atlas; optional |
 | Flat bars, health/power labels | Implemented; health includes percentage, numeric values compact above 10k |

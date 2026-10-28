@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.7-dev — tab corrections, window trim and party placement
+
+- Refs #16: Fit native tabs to their labels and chain them with a small consistent gap.
+- Refs #19: Recognize native CharacterTab atlas names and crop visible Character/Spellbook trim inside padded tiles. Keep original art, portraits, spell icons and parchment untinted; toggling off restores native appearance.
+- Refs #20: Add one party-group placement preview, visible while solo, with placement on release, pet-aware native chaining, profile persistence, snapping, reset and combat deferral. Clarify the existing all-unit scale includes party frames.
+- Add 85 focused regressions; previous settings work remains included and awaits acceptance. No in-game testing claimed.
+
 ## 0.2.6-dev — settings round, awaiting owner testing
 
 - Refs #15: Replace legacy profile actions with account/private creation, profile selection and confirmed reset/copy/delete. Protect the original Default account configuration and retain access to previous character settings.
