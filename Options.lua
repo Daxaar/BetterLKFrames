@@ -17,32 +17,38 @@ function addon:BuildOptions()
     local f=CreateFrame("Frame","BetterLKFramesOptions",UIParent)
     self.options=f;f:SetWidth(640);f:SetHeight(610);f:SetPoint("CENTER")
     f:SetFrameStrata("DIALOG");f:EnableMouse(true);f:SetMovable(true);f:RegisterForDrag("LeftButton")
-    f:SetScript("OnDragStart",function(self) self:StartMoving() end)
+    self.optionsContext="standalone"
+    f:SetScript("OnDragStart",function(self) if addon.optionsContext=="standalone" then self:StartMoving() end end)
     f:SetScript("OnDragStop",function(self) self:StopMovingOrSizing() end)
-    f:SetBackdrop({bgFile="Interface\\DialogFrame\\UI-DialogBox-Background",edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border",
-        tile=true,tileSize=32,edgeSize=32,insets={left=11,right=12,top=12,bottom=11}})
+    self.optionsBackdrop={bgFile="Interface\\DialogFrame\\UI-DialogBox-Background",edgeFile="Interface\\DialogFrame\\UI-DialogBox-Border",
+        tile=true,tileSize=32,edgeSize=32,insets={left=11,right=12,top=12,bottom=11}}
+    f:SetBackdrop(self.optionsBackdrop)
     f:SetBackdropColor(.08,.08,.08,.98)
     label(f,"BetterLKFrames",18,-16,18)
     label(f,"Original Wrath frame styling | /bf | Layout changes wait until combat ends.",18,-43,11)
     local close=CreateFrame("Button",nil,f,"UIPanelCloseButton");close:SetPoint("TOPRIGHT",-3,-3)
     addon:RegisterOptionsArt(close)
-    close:SetScript("OnClick",function() f:Hide() end)
+    self.optionsClose=close
+    close:SetScript("OnClick",function() addon:CloseOptions() end)
     table.insert(UISpecialFrames,"BetterLKFramesOptions")
     local pages,controls={},{}
     self.optionsNavigation={}
     self.optionsPages=pages
     function addon:SelectOptionsPage(index)
         for i,p in ipairs(pages) do
-            if i==index then p:Show();self.optionsNavigation[i]:LockHighlight()
-            else p:Hide();self.optionsNavigation[i]:UnlockHighlight() end
+            if i==index then p:Show() else p:Hide() end
         end
+        self.optionsPage=index;PanelTemplates_SetTab(f,index)
+        if self.optionsScroll then self.optionsScroll:SetVerticalScroll(0) end
     end
     local function page(title)
         local p=CreateFrame("Frame",nil,f);p:SetPoint("TOPLEFT",18,-100);p:SetWidth(605);p:SetHeight(470);p:Hide()
         pages[#pages+1]=p
-        local nav=button(f,title,18+(#pages-1)*151,-67,145,function()
-            for i,v in ipairs(pages) do if v==p then addon:SelectOptionsPage(i);break end end
-        end)
+        local index=#pages
+        local nav=CreateFrame("Button","BetterLKFramesOptionsTab"..index,f,"OptionsFrameTabButtonTemplate")
+        nav:SetID(index);nav:SetText(title);nav:SetPoint("TOPLEFT",18+(index-1)*149,-67)
+        PanelTemplates_TabResize(nav,0,145)
+        nav:SetScript("OnClick",function() addon:SelectOptionsPage(index) end)
         nav.blkNavigation=true;nav.blkPage=p
         self.optionsNavigation[#self.optionsNavigation+1]=nav
         return p
@@ -97,7 +103,7 @@ function addon:BuildOptions()
     slider(frames,"powerHeight","Large power-bar height",315,-65,4,12,1)
     slider(frames,"frameScale","Unit-frame scale",10,-140,0.65,1.6,0.05,"%.2f")
     slider(frames,"fontSize","Bar text size",315,-140,9,16,1)
-    button(frames,"Unlock frames",0,-210,140,function() if addon:SetUnlocked(true) then f:Hide() end end)
+    button(frames,"Unlock frames",0,-210,140,function() if addon:SetUnlocked(true) then addon:CloseOptions() end end)
     button(frames,"Lock frames",150,-210,140,function() addon:SetUnlocked(false) end)
     button(frames,"Reset frames",300,-210,140,function() StaticPopup_Show("BETTERLKFRAMES_RESET_FRAMES") end)
     StaticPopupDialogs.BETTERLKFRAMES_RESET_FRAMES={
@@ -137,31 +143,38 @@ function addon:BuildOptions()
     self.auraPreviewStatus=label(casts,"",0,-370,10)
     self.auraPreviewStatus:SetWidth(590);self.auraPreviewStatus:SetJustifyH("LEFT");self.auraPreviewStatus:Hide()
     local profiles=page("Profiles / help")
-    local current=label(profiles,"",0,-4,12)
-    local selector=CreateFrame("Frame","BetterLKFramesProfileSelect",profiles,"UIDropDownMenuTemplate")
-    selector:SetPoint("TOPLEFT",-15,-28);UIDropDownMenu_SetWidth(selector,340)
-    self.profileSelector=selector
-    UIDropDownMenu_Initialize(selector,function()
+    label(profiles,"Manage the current profile, or select another account/character profile.",0,-4,11)
+    local current=label(profiles,"",155,-42,12);current:SetWidth(430);current:SetJustifyH("LEFT")
+    local function confirm(kind,entry)
+        local data=addon:PrepareProfileAction(kind,entry)
+        if not data then return end
+        local subject=data.subject and addon:ProfileRefLabel(data.subject) or addon:ProfileRefLabel(data.target)
+        StaticPopup_Show("BETTERLKFRAMES_PROFILE_"..string.upper(kind),subject,addon:ProfileRefLabel(data.target),data)
+    end
+    button(profiles,"Reset Profile",0,-35,140,function() confirm("reset") end)
+    label(profiles,"New",0,-95,12);label(profiles,"Existing Profiles",300,-95,12)
+    local edit=CreateFrame("EditBox",nil,profiles,"InputBoxTemplate")
+    edit:SetWidth(260);edit:SetHeight(25);edit:SetPoint("TOPLEFT",10,-120);edit:SetAutoFocus(false);edit:SetMaxLetters(40)
+    self.profileNameEdit=edit
+    edit:SetScript("OnEscapePressed",function(self) self:ClearFocus() end)
+    local function dropdown(name,x,y,width,populate)
+        local menu=CreateFrame("Frame",name,profiles,"UIDropDownMenuTemplate")
+        menu:SetPoint("TOPLEFT",x,y);UIDropDownMenu_SetWidth(menu,width)
+        UIDropDownMenu_Initialize(menu,populate);return menu
+    end
+    local selector=dropdown("BetterLKFramesProfileSelect",285,-118,280,function()
         for _,entry in ipairs(addon:ListProfiles()) do
-            local name,scope=entry.name,entry.scope
+            local ref={name=entry.name,scope=entry.scope}
             local info=UIDropDownMenu_CreateInfo();info.text=entry.label
-            local active=BetterLKFramesCharDB.activeProfile
-            info.checked=(scope=="default" and not active and not BetterLKFramesCharDB.useCharacter) or
-                (active and active.name==name and active.scope==scope)
-            info.func=function() addon:Profile("load",name,scope);CloseDropDownMenus() end
+            info.checked=addon:SameProfile(addon:ActiveProfileRef(),ref)
+            info.func=function() addon:Profile("load",ref.name,ref.scope);CloseDropDownMenus() end
             UIDropDownMenu_AddButton(info)
         end
     end)
-    label(profiles,"New profile (copies current settings)",0,-78,12)
-    local edit=CreateFrame("EditBox",nil,profiles,"InputBoxTemplate")
-    edit:SetWidth(210);edit:SetHeight(25);edit:SetPoint("TOPLEFT",10,-103);edit:SetAutoFocus(false);edit:SetMaxLetters(40)
-    self.profileNameEdit=edit
-    edit:SetScript("OnEscapePressed",function(self) self:ClearFocus() end)
+    self.profileSelector=selector
     local newScope="account"
-    local scopeMenu=CreateFrame("Frame","BetterLKFramesProfileScope",profiles,"UIDropDownMenuTemplate")
-    scopeMenu:SetPoint("TOPLEFT",220,-101);UIDropDownMenu_SetWidth(scopeMenu,160)
-    UIDropDownMenu_SetText(scopeMenu,"Account-wide")
-    UIDropDownMenu_Initialize(scopeMenu,function()
+    local scopeMenu
+    scopeMenu=dropdown("BetterLKFramesProfileScope",-15,-153,155,function()
         for _,scope in ipairs({"account","character"}) do
             local selected=scope
             local info=UIDropDownMenu_CreateInfo();info.text=scope=="account" and "Account-wide" or "This character"
@@ -170,50 +183,68 @@ function addon:BuildOptions()
             UIDropDownMenu_AddButton(info)
         end
     end)
-    self.profileScopeMenu=scopeMenu
-    button(profiles,"Create",430,-103,130,function()
+    self.profileScopeMenu=scopeMenu;UIDropDownMenu_SetText(scopeMenu,"Account-wide")
+    button(profiles,"Create",175,-155,105,function()
         if addon:Profile("save",edit:GetText(),newScope) then edit:SetText("") end
         edit:ClearFocus()
     end)
+    label(profiles,"Copy another profile's settings into the current profile.",0,-212,11)
+    label(profiles,"Copy From",0,-237,12)
+    self.profileCopyMenu=dropdown("BetterLKFramesProfileCopy",-15,-260,265,function()
+        for _,entry in ipairs(addon:ListProfiles()) do
+            local ref={name=entry.name,scope=entry.scope}
+            if not addon:SameProfile(addon:ActiveProfileRef(),ref) then
+                local info=UIDropDownMenu_CreateInfo();info.text=entry.label;info.notCheckable=true
+                info.func=function() CloseDropDownMenus();confirm("copy",ref) end
+                UIDropDownMenu_AddButton(info)
+            end
+        end
+    end)
+    label(profiles,"Delete an unused profile. Default is always protected.",0,-315,11)
+    label(profiles,"Delete a Profile",0,-340,12)
+    self.profileDeleteMenu=dropdown("BetterLKFramesProfileDelete",-15,-363,265,function()
+        for _,entry in ipairs(addon:ListProfiles()) do
+            if entry.scope~="default" then
+                local ref={name=entry.name,scope=entry.scope}
+                local info=UIDropDownMenu_CreateInfo();info.text=entry.label;info.notCheckable=true
+                info.func=function() CloseDropDownMenus();confirm("delete",ref) end
+                UIDropDownMenu_AddButton(info)
+            end
+        end
+    end)
+    label(profiles,"Reset, copy and delete ask for confirmation. Cancel changes nothing.",0,-418,11)
     controls[#controls+1]=function()
         local active=addon:ActiveProfileLabel()
         current:SetText("Current profile: "..active);UIDropDownMenu_SetText(selector,active)
+        UIDropDownMenu_SetText(addon.profileCopyMenu,"Choose a source...")
+        UIDropDownMenu_SetText(addon.profileDeleteMenu,"Choose a profile...")
     end
-    local scope=label(profiles,"",0,-155,12)
-    controls[#controls+1]=function()
-        local active=BetterLKFramesCharDB.activeProfile
-        if active then scope:SetText(active.scope=="character" and "Editing character profile" or "Editing account-wide profile")
-        else scope:SetText(BetterLKFramesCharDB.useCharacter and "Active: this character only" or "Active: shared account settings") end
+    local prompts={reset="Reset profile %s to defaults? Other profiles are preserved.",
+        copy="Copy settings from %s into %s? This replaces the current profile's settings.",
+        delete="Delete profile %s? If active, Default will be selected. This cannot be undone."}
+    for kind,prompt in pairs(prompts) do
+        StaticPopupDialogs["BETTERLKFRAMES_PROFILE_"..string.upper(kind)]={text=prompt,button1=ACCEPT,button2=CANCEL,
+            OnAccept=function(dialog,data) if dialog then dialog:Hide() end;addon:ConfirmProfileAction(data) end,
+            OnCancel=function(_,data) if data then data.used=true end end,
+            timeout=0,whileDead=true,hideOnEscape=true}
     end
-    local function changeScope(mode) addon:CharacterProfile(mode);f:Hide();f:Show() end
-    button(profiles,"Use account",0,-185,140,function() changeScope("account") end)
-    button(profiles,"Copy to character",150,-185,160,function() changeScope("copy") end)
-    button(profiles,"Resume character",320,-185,160,function() changeScope("resume") end)
-    button(profiles,"Character: defaults",0,-220,180,function() changeScope("defaults") end)
-    button(profiles,"Character: Blizzard",190,-220,180,function() changeScope("blizzard") end)
-    button(profiles,"Reset active scope",0,-265,180,function() StaticPopup_Show("BETTERLKFRAMES_RESET") end)
-    label(profiles,"Character: defaults starts fresh addon settings for only this character.\nCharacter: Blizzard restores the native appearance for only this character.\nLegacy named profiles remain account-wide. New profiles copy current settings.\nCopy/default/Blizzard replaces this character's previous local settings.\n\n/bf character account | copy | defaults | blizzard | resume\n/bf profile save NAME | /bf profile load NAME\n/bf on | off | unlock | lock | aura SPELLID",0,-310,12)
-    StaticPopupDialogs.BETTERLKFRAMES_RESET={text="Reset the active scope? Unnamed account reset clears account profiles. Named/character reset preserves other profiles.",button1=ACCEPT,button2=CANCEL,
-        OnAccept=function() addon:Reset();f:Hide() end,timeout=0,whileDead=true,hideOnEscape=true}
     function addon:RefreshOptions()
         for _,refresh in ipairs(controls) do refresh() end
         self:RefreshAuraCounterUI()
     end
     f:SetScript("OnShow",function() addon:RefreshOptions() end)
-    f:SetScript("OnHide",function() addon:SetTestAuras(false) end)
-    self.optionsNavigation[1]:LockHighlight()
-    pages[1]:Show();f:Hide()
+    f:SetScript("OnHide",function()
+        addon:SetTestAuras(false)
+        if StaticPopup_Hide then for _,kind in ipairs({"RESET","COPY","DELETE"}) do StaticPopup_Hide("BETTERLKFRAMES_PROFILE_"..kind) end end
+    end)
+    PanelTemplates_SetNumTabs(f,#pages);self:SelectOptionsPage(1);f:Hide()
     addon:ThemeOptions()
-    if InterfaceOptions_AddCategory then
-        local panel=CreateFrame("Frame");panel.name="BetterLKFrames"
-        label(panel,"BetterLKFrames",16,-16,18)
-        button(panel,"Open settings",16,-55,150,function() addon:OpenOptions() end)
-        InterfaceOptions_AddCategory(panel)
-    end
+    self:BuildEmbeddedOptions()
 end
 function addon:OpenOptions()
     if not self.options then self:BuildOptions() end
-    if self.options:IsShown() then self.options:Hide() else self.options:Show() end
+    if self.optionsContext=="standalone" and self.options:IsShown() and not (InterfaceOptionsFrame and InterfaceOptionsFrame:IsShown()) then self:CloseOptions()
+    else self:ShowStandaloneOptions() end
 end
 
 function addon:RefreshAuraCounterUI()

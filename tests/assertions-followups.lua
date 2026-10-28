@@ -15,7 +15,7 @@ local account=a.accountDB
 ok(a:Profile("save","Private","character"),"create private profile before returning to default")
 a:Set("healthHeight",27);a.db.positions.PlayerFrame={x=800,y=400};a:CommitSettings()
 local menu=OpenTestMenu(a.profileSelector);local default
-for _,entry in ipairs(menu) do if entry.text=="Shared account settings (default account-wide)" then default=entry end end
+for _,entry in ipairs(menu) do if entry.text=="Default (account-wide)" then default=entry end end
 ok(default and not default.checked,"default account-wide entry remains available while private profile is active")
 default.func()
 ok(a.db==account and a.db.healthHeight==24 and a.db.positions.PlayerFrame.x==321,"default selection preserves original shared settings and layout")
@@ -24,7 +24,7 @@ a:InitSettings();ok(a.db==account and a.db.healthHeight==24,"default survives re
 ok(a:Profile("load","Private","character") and a.db.healthHeight==27 and a.db.positions.PlayerFrame.x==800,"return to private profile retains its independent settings")
 a:CharacterProfile("account");a:Reset()
 menu=OpenTestMenu(a.profileSelector);local defaults=0
-for _,entry in ipairs(menu) do if entry.text=="Shared account settings (default account-wide)" then defaults=defaults+1 end end
+for _,entry in ipairs(menu) do if entry.text=="Default (account-wide)" then defaults=defaults+1 end end
 ok(defaults==1,"default entry survives profile-library reset without duplication")
 -- #4/#5: all action buttons retain full native normal/pushed textures at minimum brightness.
 a:Set("darkWindows",true);a:Set("darkness",.1)

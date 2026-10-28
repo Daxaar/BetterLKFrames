@@ -1,5 +1,23 @@
 # Development testing and integration tracking
 
+## Current authorised round: 0.2.6-dev (Refs #15, #16, #17)
+
+The owner authorised all three medium-priority Ready issues on 28 October 2026. This branch starts from main after the previous accepted work was merged. The following older iteration notes are historical; GitHub issue and Project statuses remain authoritative.
+
+- #15: Profiles now has Current Profile, confirmed Reset Profile, New with account/character scope, Existing Profiles, confirmed Copy From and confirmed Delete a Profile. Creation clears the name only on success. Reset affects only the selected configuration, preserves profile libraries and does not delete profiles. Deleting the active configuration falls back to the preserved Default (account-wide). Default cannot be deleted, including through stale confirmation requests. Cancel and stale/scope-switched confirmations cannot overwrite another selection. Previous unnamed character settings remain selectable without migration; private named profiles stay isolated. Existing CLI compatibility is retained; the redundant UI button cluster is removed.
+- #16: Four native OptionsFrameTabButtonTemplate tabs retain section order, use compact consistent widths and native selected/disabled art. Action buttons retain their existing styling. Tab changes do not change saved profiles.
+- #17: One settings tree moves between the standalone /bf host and the native Interface → AddOns category. The embedded host removes standalone chrome/movement and fits width while scrolling vertically. /bf restores the standalone window and hides the native frame. Settings apply immediately in both views; the native Interface Cancel button does not roll back addon changes. Profile action confirmation Cancel does cancel that action. Preview cleanup and unlock/Escape return behavior are preserved.
+
+Validation: 433 Lua 5.1 mocked assertions (66 new), syntax checks, repository/privacy checks and deterministic packaging checks. A separate local exercise used the original 12340 native tab functions to build/select these tabs; research code is outside Git and ZIPs. These checks do not establish in-game rendering, taint safety or owner acceptance. No live deployment or release is authorised.
+
+Screenshots: reviewed the current reference image in each of tests/screenshots/15/, /16/ and /17/ on issue-screenshots, alongside complete issue text/comments. Reference images are excluded from artifacts.
+
+Owner testing: preserve SavedVariables and test all existing profiles, both creation scopes, invalid/duplicate names, copy/reset/delete Accept and Cancel, protected Default and active-delete fallback. Reload/relog and check private isolation. Check all tabs and label visibility at normal UI scales, embedded scrolling, repeated transitions between Interface/AddOns and /bf, immediate edits, preview cleanup, unlocking and Escape. Confirm all earlier frame/aura functionality remains intact. No in-game testing has been performed by the assistant.
+
+Integration: one issue-linked PR against main contains #15/#16/#17. It is complete for merging only when all three are owner-accepted or outstanding work is explicitly split out. Keep issues open and the PR unmerged pending acceptance. The Actions ZIP records its exact source commit and cumulative issue list in DEVELOPMENT.json; no stable release or tag is created.
+
+## Historical round: 0.2.5-dev
+
 This is a development build for original WoW 3.3.5a build 12340, Interface 30300 and Lua 5.1. Automated checks use mocked client APIs. Owner feedback from 0.2.2-dev informed these follow-ups; the assistant has not performed in-game loading, visual, taint or acceptance testing of 0.2.5-dev. Issues remain open for owner acceptance. No server/client deployment or stable release is implied.
 
 ## Current authorised round: 0.2.5-dev (Refs #1, #4, #8, #10, #13)

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.6-dev — settings round, awaiting owner testing
+
+- Refs #15: Replace legacy profile actions with account/private creation, profile selection and confirmed reset/copy/delete. Protect the original Default account configuration and retain access to previous character settings.
+- Refs #16: Use native compact tabs with a clear selected state for all four settings sections.
+- Refs #17: Embed the actual shared settings controls in Interface → AddOns, with a scrollable viewport and clean transitions to the standalone /bf window.
+- Add 66 regressions for profile preservation, stale confirmations, isolation, persistence and settings-host transitions. No in-game testing is claimed.
+
 ## 0.2.5-dev — authorised follow-up round, awaiting owner testing
 
 - Refs #4: Clear the profile name only after successful account/private creation; keep failed input and selected configuration intact.
