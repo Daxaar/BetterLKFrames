@@ -4,7 +4,7 @@ BetterLKFrames = addon
 local white = "Interface\\Buttons\\WHITE8X8"
 local stock = "Interface\\TargetingFrame\\UI-StatusBar"
 local defaults = {
-    enabled = true, bigBars = true, classHealth = true, classNames = true,
+    enabled = true, bigBars = true, classHealth = true, targetClassHealth = true, compactParty = false, hidePlayerAuraSpirals = true, classNames = true,
     reactionHealth = true, healthGradient = false, flatBars = false,
     darkFrames = true, darkActionBars = true, darkMinimap = true, darkTooltip = false,
     classPortraits = false, hideCombatFlash = false, hidePvp = false, hideResting = false,
@@ -38,6 +38,11 @@ local function normalize(db)
         if db.powerHeight==8 then db.powerHeight=11 end
         if db.gridSize==8 then db.gridSize=32 end
         db.version=3
+    end
+    -- Preserve the former target appearance when adopting the independent switch.
+    if type(db.targetClassHealth)~="boolean" then
+        if type(db.classHealth)=="boolean" then db.targetClassHealth=db.classHealth
+        else db.targetClassHealth=defaults.targetClassHealth end
     end
     for k, v in pairs(defaults) do
         if type(db[k]) ~= type(v) then db[k] = copy(v) end
@@ -87,7 +92,7 @@ end
 addon.Short = short
 local function colour(unit)
     local db = addon.db
-    if db.classHealth and UnitIsPlayer(unit) then
+    if ((unit=="target" and db.targetClassHealth) or (unit~="target" and db.classHealth)) and UnitIsPlayer(unit) then
         local _, class = UnitClass(unit); local c = RAID_CLASS_COLORS[class]
         if c then return c.r,c.g,c.b end
     end
@@ -147,6 +152,7 @@ local function paint(entry)
 end
 function addon:Refresh()
     for _, entry in pairs(self.frames) do paint(entry) end
+    if self.RefreshCompactParty then self:RefreshCompactParty() end
 end
 local function bar(parent, anchor)
     local f = CreateFrame("StatusBar",nil,parent); f:SetFrameLevel(parent:GetFrameLevel()+10)
@@ -315,6 +321,7 @@ function addon:Apply()
     end
     self.pending,self.warned = false,false
     if self.FinishPendingPartyMove then self:FinishPendingPartyMove() end
+    if self.RestoreCompactParty then self:RestoreCompactParty() end
     self:Discover(); importantNames = {}
     for id, enabled in pairs(self.db.importantSpells) do
         if enabled and type(id)=="number" then local n = GetSpellInfo(id); if n then importantNames[n]=true end end
@@ -367,8 +374,10 @@ function addon:Apply()
     if self.ApplyPartyChain then self:ApplyPartyChain() end
     if not self.db.enabled and self.unlocked then self:SetUnlocked(false) end
     if self.unlocked and self.ShowMoveGuides then self:ShowMoveGuides(true) end
+    self:Theme();self:SetupCasts()
+    if self.ApplyCompactParty then self:ApplyCompactParty() end
     if self.UpdatePartyMover then self:UpdatePartyMover() end
-    self:Theme();self:SetupCasts();self:Refresh()
+    self:Refresh()
     if self.RefreshAuraOffset then self:RefreshAuraOffset() end
     if self.UpdateTestAuras then self:UpdateTestAuras() end
     dirty = false
@@ -382,6 +391,7 @@ function addon:Reset()
 end
 function addon:ResetFrames()
     if InCombatLockdown() then self:Message("Reset frames outside combat.");return false end
+    if self.RestoreCompactParty then self:RestoreCompactParty() end
     if self.partyGroup then
         self.partyGroup.dragDB=nil;self.partyGroup.dragging=nil;self.partyGroup.stopPending=nil
         self.partyGroup.owner:StopMovingOrSizing()
@@ -452,7 +462,7 @@ function addon:UpdateCasts()
         else f:Hide() end
     end
 end
-local function auraButton(button,unit,index,debuff)
+local function auraButton(button,unit,index,debuff,mainPlayer)
     if not button or not button:IsShown() then return end
     local n,rank,icon,count,kind,duration,expiry,caster,steal,consolidate,spellId
     if debuff then n,rank,icon,count,kind,duration,expiry,caster,steal,consolidate,spellId=UnitDebuff(unit,index)
@@ -469,8 +479,10 @@ local function auraButton(button,unit,index,debuff)
             f.cooldown:SetAllPoints(button);f.cooldown:EnableMouse(false)
         end
         f.nativeDuration=button.duration or (button:GetName() and _G[button:GetName().."Duration"])
+        f.nativeCooldown=native
         button.blkAura=f;addon.auras[button]=f
     end
+    button.blkAura.mainPlayerAura=mainPlayer
     addon:PaintAura(button,button.blkAura,n,duration,expiry,spellId,importantNames[n])
 end
 function addon:PositionAuraTimer(timer,button)
@@ -499,6 +511,7 @@ end
 function addon:PaintAura(button,f,n,duration,expiry,spellId,important)
     local db=self.db
     if addon.SkinAura then addon:SkinAura(button,f) end
+    if addon.ManagePlayerAuraSpiral then addon:ManagePlayerAuraSpiral(f) end
     local ownTimers=db.auraTimers and not self:HasOmniCC()
     rememberAlpha(f.nativeDuration,db.enabled and ownTimers)
     local remaining=expiry and expiry-GetTime() or 0
@@ -524,7 +537,7 @@ function addon:PaintAura(button,f,n,duration,expiry,spellId,important)
 end
 function addon:UpdateAuras()
     if not self.db.enabled then
-        for _,f in pairs(self.auras) do f:Hide();if f.cooldown then f.cooldown:Hide();f.cooldownExpiry=nil end;rememberAlpha(f.nativeDuration,false);if self.SkinAura then self:SkinAura(nil,f) end end
+        for _,f in pairs(self.auras) do f:Hide();if f.cooldown then f.cooldown:Hide();f.cooldownExpiry=nil end;rememberAlpha(f.nativeDuration,false);if self.SkinAura then self:SkinAura(nil,f) end;if self.ManagePlayerAuraSpiral then self:ManagePlayerAuraSpiral(f) end end
         return
     end
     for _,pair in ipairs({{"TargetFrame","target"},{"FocusFrame","focus"}}) do
@@ -533,8 +546,8 @@ function addon:UpdateAuras()
             local d=_G[pair[1].."Debuff"..i];if d then auraButton(d,pair[2],d:GetID()>0 and d:GetID() or i,true) end
         end
     end
-    for i=1,40 do local b=_G["BuffButton"..i];if b then auraButton(b,PlayerFrame and PlayerFrame.unit or "player",b:GetID()>0 and b:GetID() or i,false) end end
-    for i=1,16 do local b=_G["DebuffButton"..i];if b then auraButton(b,PlayerFrame and PlayerFrame.unit or "player",b:GetID()>0 and b:GetID() or i,true) end end
+    for i=1,40 do local b=_G["BuffButton"..i];if b then auraButton(b,PlayerFrame and PlayerFrame.unit or "player",b:GetID()>0 and b:GetID() or i,false,true) end end
+    for i=1,16 do local b=_G["DebuffButton"..i];if b then auraButton(b,PlayerFrame and PlayerFrame.unit or "player",b:GetID()>0 and b:GetID() or i,true,true) end end
 end
 function addon:Command(message)
     local cmd,rest=string.match(message or "","^(%S*)%s*(.-)$");cmd=string.lower(cmd or "")
@@ -587,13 +600,16 @@ addon:SetScript("OnEvent",function(self,event,arg1)
         end
     elseif event=="PLAYER_LOGOUT" then
         if self.SetTestAuras then self:SetTestAuras(false) end
-    elseif event=="ADDON_LOADED" and self.db then self:Apply() end
+    elseif event=="ADDON_LOADED" and self.db then self:Apply()
+    elseif self.db and (event=="PARTY_MEMBERS_CHANGED" or event=="RAID_ROSTER_UPDATE" or event=="UNIT_PET" or event=="PLAYER_ENTERING_WORLD") then
+        if self.db.compactParty or self.compactPartyActive then self:Apply() end
+    end
     dirty=true
 end)
 for _,ev in ipairs({"ADDON_LOADED","PLAYER_LOGIN","PLAYER_ENTERING_WORLD","PLAYER_REGEN_ENABLED","PLAYER_REGEN_DISABLED",
     "PLAYER_TARGET_CHANGED","PLAYER_FOCUS_CHANGED","UNIT_HEALTH","UNIT_MAXHEALTH","UNIT_MANA","UNIT_MAXMANA",
     "UNIT_RAGE","UNIT_FOCUS","UNIT_ENERGY","UNIT_HAPPINESS","UNIT_RUNIC_POWER",
-    "UNIT_DISPLAYPOWER","UNIT_FACTION","UNIT_NAME_UPDATE","UNIT_AURA","PARTY_MEMBERS_CHANGED","UNIT_PET","PLAYER_UPDATE_RESTING","UNIT_LEVEL","PLAYER_LOGOUT"}) do addon:RegisterEvent(ev) end
+    "UNIT_DISPLAYPOWER","UNIT_FACTION","UNIT_NAME_UPDATE","UNIT_AURA","PARTY_MEMBERS_CHANGED","RAID_ROSTER_UPDATE","UNIT_PET","PLAYER_UPDATE_RESTING","UNIT_LEVEL","PLAYER_LOGOUT"}) do addon:RegisterEvent(ev) end
 addon:SetScript("OnUpdate",function(self,dt)
     if not self.db then return end
     if self.reopenFrames and not InCombatLockdown() then

@@ -29,7 +29,7 @@ function methods:GetPoint(i) if self.points[i] then return unpack(self.points[i]
 function methods:SetAllPoints(f) geometry(self);self.allPoints=f end
 function methods:SetWidth(x) geometry(self);self.width=x end
 function methods:SetHeight(x) geometry(self);self.height=x end
-function methods:GetWidth() return self.width end
+function methods:GetWidth() if self.kind=="FontString" and self.width==0 then return self:GetTextWidth() end;return self.width end
 function methods:GetHeight() return self.height end
 function methods:SetScale(x) geometry(self);self.scale=x end
 function methods:GetScale() return self.scale end
@@ -102,7 +102,7 @@ function CreateFrame(kind,name,parent,template)
  if template=="UIPanelButtonTemplate" then f.normalTexture=CreateFrame("Texture",nil,f) end
  if template=="OptionsFrameTabButtonTemplate" then
   for _,suffix in ipairs({"Left","Middle","Right","LeftDisabled","MiddleDisabled","RightDisabled","HighlightTexture"}) do
-   local t=CreateFrame("Texture",name..suffix,f);t.width=12
+   local t=CreateFrame("Texture",name..suffix,f);t.width=(suffix:find("Left") or suffix:find("Right")) and 20 or 88
   end
   CreateFrame("FontString",name.."Text",f)
  end
@@ -147,7 +147,13 @@ function UnitFramePortrait_Update() end
 function PlayerFrame_UpdateArt() end
 function TargetFrame_CheckClassification() end
 HOOKS={}
-function hooksecurefunc(name,fn) HOOKS[name]=fn end
+function hooksecurefunc(name,method,fn)
+ if type(name)=="table" then
+  local old=name[method];name[method]=function(self,...) local r=old(self,...);fn(self,...);return r end
+ else HOOKS[name]=method end
+end
+function methods:GetHitRectInsets() return unpack(self.hitInsets or {0,0,0,0}) end
+function methods:SetHitRectInsets(...) geometry(self);self.hitInsets={...} end
 local function unitFrame(name,unit)
  local f=CreateFrame("Button",name,UIParent);f.unit=unit;f.protected=true;f:SetPoint("TOPLEFT",UIParent,"TOPLEFT",10,-20)
  f.healthbar=CreateFrame("StatusBar",name.."HealthBar",f)

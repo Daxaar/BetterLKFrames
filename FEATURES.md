@@ -5,13 +5,15 @@ This is an iterative client-test release, not complete BetterBlizzFrames parity.
 | Feature | Current development status / limits |
 | --- | --- |
 | Thicker health bars | Implemented: player/target/focus, configurable heights; secondary bars retain native height |
-| Class health colours | Implemented on available native unit frames; PCs only, NPC reaction/gradient options |
+| Class health colours | Independent target switch; other units retain existing setting. Identified PCs only; NPC reaction/gradient fallback |
 | Dark decoration | Implemented for named unit-frame/action-bar/minimap/cast-bar art; optional tooltip backdrop |
 | Rounded gradient bars / names above | Implemented for large player/target/focus bars; independent toggles, flat fill optional |
 | Individual button borders | Implemented for main/extra/side action bars, pet/stance buttons, bags and legacy menu buttons; icons stay untinted |
 | Buff/debuff borders | Implemented for player/target/focus aura buttons and weapon enchant edges; native type/alert signals retained |
 | Snap movement / guides | Implemented: edges, centres, mirrored pair, screen centre/edges, visible screen-centred counted grid, optional grid-centre snapping and Shift bypass; snapping on release |
 | Standard window rims | Added: recognized native quest/spellbook/character/talent/map/bag rims and shared frame pieces; native Character/Spellbook atlas trim coordinates; partial decorative coverage, not every header/tab/window |
+| Compact party presentation | Optional native secure party/pet restyling, portrait-free health/name/resource rectangles; pets and native debuff/hover-buff interactions retained; no raid restyling |
+| Main player auras | Optional suppression of top-right spiral models, preserving timing data/text; thin dark outer trim respects aura-theme toggle and native dispel colours |
 | Settings window decoration | Blizzard dialog border; button/checkbox/slider trim follows window dark-mode brightness |
 | Frame scaling/moving | Implemented outside combat, saved positions, lock and restore; party group uses one solo-visible placement preview, applies on release and retains pet-aware chaining. One all-unit scale includes party frames |
 | Class-coloured names | Implemented; optional |
