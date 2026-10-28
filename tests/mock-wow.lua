@@ -227,3 +227,6 @@ function PlayerFrame_UpdateStatus()
  else PlayerRestIcon:Hide();PlayerRestGlow:Hide() end
  if VEHICLE then PlayerLevelText:Hide() else PlayerLevelText:Show() end
 end
+
+LOADED_ADDONS={}
+function IsAddOnLoaded(name) return LOADED_ADDONS[name] and true or false end

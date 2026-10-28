@@ -30,6 +30,7 @@
 !/tests/assertions-issues.lua
 !/tests/assertions-followups.lua
 !/tests/assertions-011.lua
+!/tests/assertions-round.lua
 !/tests/run-tests.py
 !/tests/verify-package.py
 !/tests/fixtures/

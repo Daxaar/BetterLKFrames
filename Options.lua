@@ -84,7 +84,7 @@ function addon:BuildOptions()
         {"darkFrames","Dark unit-frame decoration"},{"darkActionBars","Dark action-bar decoration"},
         {"darkMinimap","Dark minimap border"},{"darkTooltip","Dark tooltip background"},
         {"hideCombatFlash","Hide unit-frame combat flash"},{"hidePvp","Hide unit-frame PvP icons"},
-        {"darkButtons","Dark action/bag/menu button borders"},{"darkAuras","Dark buff/debuff borders"},{"darkWindows","Dark standard window trim"}}
+        {"darkButtons","Dark action/bag/menu button borders"},{"darkAuras","Dark buff/debuff borders"},{"darkWindows","Dark standard window trim"},{"hideResting","Hide resting Zzz indicator"}}
     for i,e in ipairs(entries) do local col=math.floor((i-1)/9);local row=(i-1)%9
         check(appearance,e[1],e[2],col*300,-row*32)
     end
@@ -120,16 +120,22 @@ function addon:BuildOptions()
     local casts=page("Casts / auras")
     check(casts,"castTimers","Native cast-bar time remaining",0,0)
     check(casts,"partyCastbars","Party-member cast bars",300,0)
-    check(casts,"auraTimers","Aura time remaining",0,-40)
+    self.auraTimerCheck=check(casts,"auraTimers","Aura time remaining",0,-40)
     check(casts,"auraSpirals","Add missing aura cooldown spirals",300,-40)
     check(casts,"auraWarnings","Expiring-aura red border",0,-80)
     check(casts,"showTestAuras","Show test auras",300,-80)
+    self.omniCCWarning=label(casts,"OmniCC detected — OmniCC is managing aura countdown text. BetterLKFrames countdown text is disabled.",300,-108,10)
+    self.omniCCWarning:SetWidth(290);self.omniCCWarning:SetHeight(54)
+    self.omniCCWarning:SetJustifyH("LEFT");self.omniCCWarning:SetJustifyV("TOP")
+    self.omniCCWarning:SetTextColor(1,.8,.2);self.omniCCWarning:Hide()
     self.auraOptionsPage=casts
     casts:SetScript("OnHide",function() addon:SetTestAuras(false) end)
-    slider(casts,"castScale","Native cast-bar scale",10,-145,0.6,2,0.05,"%.2f")
-    slider(casts,"warningSeconds","Aura warning seconds",315,-145,0,10,1)
-    slider(casts,"auraOffset","Target/focus aura gap",10,-225,0,12,1)
-    label(casts,"Gold borders mark important spell IDs: /bf aura SPELLID\nRun the same command again to remove an ID.\nNative cooldown spirals are preserved. No aura filtering or secure reordering.\nParty casting information depends on what the Wrath client can see.\nTest samples: gold border uses /bf aura 21562. Preview stops in combat.",0,-290,12)
+    slider(casts,"castScale","Native cast-bar scale",10,-185,0.6,2,0.05,"%.2f")
+    slider(casts,"warningSeconds","Aura warning seconds",315,-185,0,10,1)
+    slider(casts,"auraOffset","Target/focus aura gap",10,-255,0,12,1)
+    label(casts,"Gold borders mark important spell IDs: /bf aura SPELLID\nRun the same command again to remove an ID.\nNative cooldown spirals are preserved. No aura filtering or secure reordering.\nParty casting information depends on what the Wrath client can see.\nTest samples: gold border uses /bf aura 21562. Preview stops in combat.",0,-305,11)
+    self.auraPreviewStatus=label(casts,"",0,-370,10)
+    self.auraPreviewStatus:SetWidth(590);self.auraPreviewStatus:SetJustifyH("LEFT");self.auraPreviewStatus:Hide()
     local profiles=page("Profiles / help")
     local current=label(profiles,"",0,-4,12)
     local selector=CreateFrame("Frame","BetterLKFramesProfileSelect",profiles,"UIDropDownMenuTemplate")
@@ -165,7 +171,10 @@ function addon:BuildOptions()
         end
     end)
     self.profileScopeMenu=scopeMenu
-    button(profiles,"Create",430,-103,130,function() addon:Profile("save",edit:GetText(),newScope);edit:ClearFocus() end)
+    button(profiles,"Create",430,-103,130,function()
+        if addon:Profile("save",edit:GetText(),newScope) then edit:SetText("") end
+        edit:ClearFocus()
+    end)
     controls[#controls+1]=function()
         local active=addon:ActiveProfileLabel()
         current:SetText("Current profile: "..active);UIDropDownMenu_SetText(selector,active)
@@ -186,7 +195,10 @@ function addon:BuildOptions()
     label(profiles,"Character: defaults starts fresh addon settings for only this character.\nCharacter: Blizzard restores the native appearance for only this character.\nLegacy named profiles remain account-wide. New profiles copy current settings.\nCopy/default/Blizzard replaces this character's previous local settings.\n\n/bf character account | copy | defaults | blizzard | resume\n/bf profile save NAME | /bf profile load NAME\n/bf on | off | unlock | lock | aura SPELLID",0,-310,12)
     StaticPopupDialogs.BETTERLKFRAMES_RESET={text="Reset the active scope? Unnamed account reset clears account profiles. Named/character reset preserves other profiles.",button1=ACCEPT,button2=CANCEL,
         OnAccept=function() addon:Reset();f:Hide() end,timeout=0,whileDead=true,hideOnEscape=true}
-    function addon:RefreshOptions() for _,refresh in ipairs(controls) do refresh() end end
+    function addon:RefreshOptions()
+        for _,refresh in ipairs(controls) do refresh() end
+        self:RefreshAuraCounterUI()
+    end
     f:SetScript("OnShow",function() addon:RefreshOptions() end)
     f:SetScript("OnHide",function() addon:SetTestAuras(false) end)
     self.optionsNavigation[1]:LockHighlight()
@@ -202,4 +214,11 @@ end
 function addon:OpenOptions()
     if not self.options then self:BuildOptions() end
     if self.options:IsShown() then self.options:Hide() else self.options:Show() end
+end
+
+function addon:RefreshAuraCounterUI()
+    if not self.omniCCWarning then return end
+    local loaded=self:HasOmniCC()
+    if loaded then self.omniCCWarning:Show() else self.omniCCWarning:Hide() end
+    _G[self.auraTimerCheck:GetName().."Text"]:SetText(loaded and "Aura time remaining (saved preference)" or "Aura time remaining")
 end

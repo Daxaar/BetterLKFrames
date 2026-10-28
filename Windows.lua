@@ -15,6 +15,7 @@ function addon:RegisterOptionsArt(button)
 end
 function addon:ThemeOptions()
     if not self.options then return end
+    if self.RefreshAuraCounterUI then self:RefreshAuraCounterUI() end
     local on=self.db.enabled and self.db.darkWindows
     local factor=on and self.db.darkness or 1
     self.options:SetBackdropBorderColor(factor,factor,factor,1)

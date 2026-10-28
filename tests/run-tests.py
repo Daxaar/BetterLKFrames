@@ -24,3 +24,9 @@ blocker.execute((root/'tests/mock-wow.lua').read_text())
 for f in ('Core.lua','Profiles.lua','Style.lua','Windows.lua','AuraLayout.lua','Snapping.lua','Preview.lua','Options.lua'):
     blocker.execute((root/f).read_text())
 blocker.execute((root/'tests/assertions-011.lua').read_text())
+
+round_tests=LuaRuntime(unpack_returned_tuples=True)
+round_tests.execute((root/'tests/mock-wow.lua').read_text())
+for f in ('Core.lua','Profiles.lua','Style.lua','Windows.lua','AuraLayout.lua','Snapping.lua','Preview.lua','Options.lua'):
+    round_tests.execute((root/f).read_text())
+round_tests.execute((root/'tests/assertions-round.lua').read_text())
