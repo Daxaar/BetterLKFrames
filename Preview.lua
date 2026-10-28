@@ -48,6 +48,7 @@ local function visual(button,data)
     f:SetFrameLevel(f.cooldown:GetFrameLevel()+2)
     f.testLabel=f:CreateFontString(nil,"OVERLAY");f.testLabel:SetFont(STANDARD_TEXT_FONT,8,"OUTLINE")
     f.testLabel:SetPoint("BOTTOM",button,"TOP",0,1);f.testLabel:SetText("TEST");f.testLabel:SetTextColor(1,.85,.25)
+    f.mainPlayerAura=button:GetParent().context.unit=="player"
     button.visual=f
 end
 local function resetGroup(g,clearExpiry)

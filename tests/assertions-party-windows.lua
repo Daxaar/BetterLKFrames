@@ -8,8 +8,8 @@ local total=0
 for i,tab in ipairs(a.optionsNavigation) do
  total=total+tab:GetWidth()
  local p,r,rp,x,y=tab:GetPoint(1)
- ok(tab:GetWidth()==tab:GetTextWidth()+24,"#16 label-sized tab "..i)
- if i>1 then ok(p=="LEFT" and r==a.optionsNavigation[i-1] and rp=="RIGHT" and x==2 and y==0,"#16 small consistent adjacent gap "..i) end
+ ok(tab:GetWidth()==tab:GetTextWidth()+_G[tab:GetName().."Left"]:GetWidth()*2+8,"#16 label-sized tab "..i)
+ if i>1 then ok(p=="TOPLEFT" and r==a.optionsNavigation[i-1] and rp=="TOPRIGHT" and x==2 and y==0,"#16 small consistent adjacent gap "..i) end
 end
 ok(total<500,"#16 strip occupies content width without stretching")
 a:ShowStandaloneOptions();OpenTestCategory();a:SelectOptionsPage(3)

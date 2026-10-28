@@ -20,7 +20,7 @@ end
 BUFFS.player={{"Test aura","","icon",1,nil,10,NOW+4,"player",false,false,123}}
 a:UpdateAuras()
 ok(BuffButton1.blkAura.time:GetText()=="" and not BuffButton1.blkAura.edge:IsShown() and
-    not BuffButton1.blkAura.cooldown:IsShown() and not BuffButton1.blkAura.skin:IsShown(),"fresh install has no custom aura visuals")
+    not BuffButton1.blkAura.cooldown:IsShown() and (not BuffButton1.blkAura.mainTrim or not BuffButton1.blkAura.mainTrim:IsShown()),"fresh install has no custom aura visuals")
 ok(BuffButton1.duration:GetAlpha()==1,"native aura duration remains visible")
 local upgrade=a.Normalize({version=3,auraTimers=true,auraSpirals=false,auraWarnings=true,darkAuras=true,auraOffset=7,importantSpells={[123]=true}})
 ok(upgrade.auraTimers and not upgrade.auraSpirals and upgrade.auraWarnings and upgrade.darkAuras and
@@ -28,7 +28,7 @@ ok(upgrade.auraTimers and not upgrade.auraSpirals and upgrade.auraWarnings and u
 -- #2: native template art, native hover/pushed treatment and persistent selected highlight.
 a:Set("darkWindows",true);a:Set("darkness",.1)
 for _,nav in ipairs(a.optionsNavigation) do
-    ok(nav.template=="OptionsFrameTabButtonTemplate" and nav:GetWidth()==nav:GetTextWidth()+24,"navigation uses legible native tabs")
+    ok(nav.template=="OptionsFrameTabButtonTemplate" and nav:GetWidth()==nav:GetTextWidth()+_G[nav:GetName().."Left"]:GetWidth()*2+8,"navigation uses legible native tabs")
 end
 local nav=a.optionsNavigation[3];nav:GetScript("OnClick")(nav)
 ok(nav.selected and nav.blkPage:IsShown() and not a.optionsNavigation[1].selected,"navigation selection tracks active page")

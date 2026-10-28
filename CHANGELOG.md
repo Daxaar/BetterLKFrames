@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.8-dev — target colours, main auras and compact party frames
+
+- Refs #16: Replace inherited tab OnShow sizing with explicit label/cap sizing on show and selection; retain consistent adjacent edge gaps.
+- Refs #22: Add independent target class-colour switch, adopting each profile’s former target preference without changing other units.
+- Refs #23: Hide main player-aura spiral models by default without clearing their timing data; preserve target/focus spirals. Add thin dark outer trim under the existing aura-border setting, retaining icon art and dispel colours.
+- Refs #24: Add optional portrait-free party/pet rectangles on the original secure buttons, native interactions/visibility, side debuffs/cast bars, profile persistence, restore and combat deferral. Raid widgets/settings are untouched. Native pet-aware spacing and hover buffs are retained.
+- Add 97 focused regressions. No in-game testing or acceptance claimed.
+
 ## 0.2.7-dev — tab corrections, window trim and party placement
 
 - Refs #16: Fit native tabs to their labels and chain them with a small consistent gap.

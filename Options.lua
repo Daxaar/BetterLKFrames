@@ -39,6 +39,7 @@ function addon:BuildOptions()
             if i==index then p:Show() else p:Hide() end
         end
         self.optionsPage=index;PanelTemplates_SetTab(f,index)
+        for _,nav in ipairs(self.optionsNavigation) do if nav.blkFit then nav.blkFit() end end
         if self.optionsScroll then self.optionsScroll:SetVerticalScroll(0) end
     end
     local function page(title)
@@ -47,11 +48,16 @@ function addon:BuildOptions()
         local index=#pages
         local nav=CreateFrame("Button","BetterLKFramesOptionsTab"..index,f,"OptionsFrameTabButtonTemplate")
         nav:SetID(index);nav:SetText(title)
-        -- Native caps already supply padding. Chain to the previous visible tab,
-        -- rather than reserving a fixed quarter of the settings window per label.
-        PanelTemplates_TabResize(nav,0)
+        local function fit()
+            local cap=_G[nav:GetName().."Left"]:GetWidth()
+            -- The template's inherited OnShow otherwise resizes from a previously
+            -- constrained FontString. Always measure the actual label instead.
+            _G[nav:GetName().."Text"]:SetWidth(0)
+            PanelTemplates_TabResize(nav,0,math.ceil(nav:GetTextWidth())+cap*2+8)
+        end
+        nav.blkFit=fit;nav:SetScript("OnShow",fit);fit()
         if index==1 then nav:SetPoint("TOPLEFT",18,-67)
-        else nav:SetPoint("LEFT",self.optionsNavigation[index-1],"RIGHT",2,0) end
+        else nav:SetPoint("TOPLEFT",self.optionsNavigation[index-1],"TOPRIGHT",2,0) end
         nav:SetScript("OnClick",function() addon:SelectOptionsPage(index) end)
         nav.blkNavigation=true;nav.blkPage=p
         self.optionsNavigation[#self.optionsNavigation+1]=nav
@@ -88,7 +94,7 @@ function addon:BuildOptions()
     end
     local appearance=page("Appearance")
     local entries={{"enabled","Enable BetterLKFrames"},{"bigBars","Thicker player/target/focus bars"},
-        {"classHealth","Class-coloured player health"},{"classNames","Class-coloured player names"},
+        {"classHealth","Class-coloured other unit health"},{"classNames","Class-coloured player names"},
         {"reactionHealth","NPC reaction health colours"},{"healthGradient","Health gradient (non-class bars)"},
         {"flatBars","Flat bar texture"},{"classPortraits","Class-icon portraits"},
         {"darkFrames","Dark unit-frame decoration"},{"darkActionBars","Dark action-bar decoration"},
@@ -98,8 +104,12 @@ function addon:BuildOptions()
     for i,e in ipairs(entries) do local col=math.floor((i-1)/9);local row=(i-1)%9
         check(appearance,e[1],e[2],col*300,-row*32)
     end
+    check(appearance,"targetClassHealth","Colour target health bar by class",0,-290)
+    check(appearance,"compactParty","Use compact party frames",300,-290)
     slider(appearance,"darkness","Decoration brightness",10,-325,0.1,1,0.05,"%.2f")
     label(appearance,"Lower brightness is darker. Portraits, icons and bar colours stay untinted.",0,-385,11)
+    label(appearance,"Target class colour is independent of the class-colour option for other units.",0,-410,11)
+    label(appearance,"Compact party mode retains native pet visibility; layout changes wait until combat ends.",0,-430,11)
     local frames=page("Frames")
     check(frames,"healthText","Health values and percentage",0,0)
     check(frames,"powerText","Power values",300,0)
@@ -143,8 +153,9 @@ function addon:BuildOptions()
     casts:SetScript("OnHide",function() addon:SetTestAuras(false) end)
     slider(casts,"castScale","Native cast-bar scale",10,-185,0.6,2,0.05,"%.2f")
     slider(casts,"warningSeconds","Aura warning seconds",315,-185,0,10,1)
+    check(casts,"hidePlayerAuraSpirals","Hide main player aura spirals",300,-245)
     slider(casts,"auraOffset","Target/focus aura gap",10,-255,0,12,1)
-    label(casts,"Gold borders mark important spell IDs: /bf aura SPELLID\nRun the same command again to remove an ID.\nNative cooldown spirals are preserved. No aura filtering or secure reordering.\nParty casting information depends on what the Wrath client can see.\nTest samples: gold border uses /bf aura 21562. Preview stops in combat.",0,-305,11)
+    label(casts,"Gold borders mark important spell IDs: /bf aura SPELLID\nRun the same command again to remove an ID.\nTarget/focus spirals stay separate from main player auras. No filtering.\nParty casting information depends on what the Wrath client can see.\nTest samples: gold border uses /bf aura 21562. Preview stops in combat.",0,-305,11)
     self.auraPreviewStatus=label(casts,"",0,-370,10)
     self.auraPreviewStatus:SetWidth(590);self.auraPreviewStatus:SetJustifyH("LEFT");self.auraPreviewStatus:Hide()
     local profiles=page("Profiles / help")

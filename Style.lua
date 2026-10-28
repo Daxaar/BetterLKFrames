@@ -85,12 +85,50 @@ function addon:ThemeButtons()
     for i=1,2 do skinButton(_G["TempEnchant"..i],self.db.enabled and self.db.darkAuras,false) end
 end
 function addon:SkinAura(button,f)
-    if not f.skin and button and self.db.enabled and self.db.darkAuras and not InCombatLockdown() then
-        f.skin=f:CreateTexture(nil,"OVERLAY");f.skin:SetTexture(media.."ButtonEdge")
-        f.skin:SetPoint("TOPLEFT",button,"TOPLEFT",-1,1);f.skin:SetPoint("BOTTOMRIGHT",button,"BOTTOMRIGHT",1,-1)
+    local enabled=self.db.enabled and self.db.darkAuras
+    if f.mainPlayerAura then
+        if not f.mainTrim and button and enabled and not InCombatLockdown() then
+            local t=CreateFrame("Frame",nil,f);f.mainTrim=t;t:EnableMouse(false)
+            t:SetPoint("TOPLEFT",button,"TOPLEFT",-2,2);t:SetPoint("BOTTOMRIGHT",button,"BOTTOMRIGHT",2,-2)
+            t:SetBackdrop({edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1})
+        end
+        if f.mainTrim then
+            local k=self.db.darkness*.25;f.mainTrim:SetBackdropBorderColor(k,k,k,1)
+            if enabled then f.mainTrim:Show() else f.mainTrim:Hide() end
+        end
+        if f.skin then f.skin:Hide() end
+    else
+        if not f.skin and button and enabled and not InCombatLockdown() then
+            f.skin=f:CreateTexture(nil,"OVERLAY");f.skin:SetTexture(media.."ButtonEdge")
+            f.skin:SetPoint("TOPLEFT",button,"TOPLEFT",-1,1);f.skin:SetPoint("BOTTOMRIGHT",button,"BOTTOMRIGHT",1,-1)
+        end
+        if f.skin then if enabled then f.skin:Show() else f.skin:Hide() end end
     end
-    if f.skin then if self.db.enabled and self.db.darkAuras then f.skin:Show() else f.skin:Hide() end end
-    -- Keep native debuff-type/stealable colours and red/gold alert borders intact.
+    -- The thin outer main-aura trim leaves native debuff-type/alert colours visible.
+end
+function addon:ManagePlayerAuraSpiral(f)
+    if not f.mainPlayerAura then return end
+    local cd=f.cooldown or f.nativeCooldown;if not cd then return end
+    local hide=self.db.enabled and self.db.hidePlayerAuraSpirals
+    if not cd.blkSpiralState then
+        cd.blkSpiralState={alpha=cd:GetAlpha(),hidden=false}
+        -- Do not hide/clear the cooldown: timer consumers still receive its data.
+        -- Legacy OmniCC draws its text on the cooldown's parent, independently.
+        hooksecurefunc(cd,"SetAlpha",function(_,alpha)
+            local s=cd.blkSpiralState
+            if not s.setting then
+                s.alpha=alpha
+                if s.hidden and alpha~=0 then s.setting=true;cd:SetAlpha(0);s.setting=nil end
+            end
+        end)
+    end
+    local state=cd.blkSpiralState
+    if hide then
+        if not state.hidden then state.alpha=cd:GetAlpha() end
+        state.hidden=true;state.setting=true;cd:SetAlpha(0);state.setting=nil
+    elseif state.hidden then
+        state.hidden=false;state.setting=true;cd:SetAlpha(state.alpha);state.setting=nil
+    end
 end
 
 -- Suppress only the resting badge; let Blizzard own level text, combat and vehicles.

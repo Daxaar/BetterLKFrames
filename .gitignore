@@ -33,6 +33,7 @@
 !/tests/assertions-round.lua
 !/tests/assertions-settings.lua
 !/tests/assertions-party-windows.lua
+!/tests/assertions-compact-auras.lua
 !/tests/run-tests.py
 !/tests/verify-package.py
 !/tests/fixtures/
