@@ -83,7 +83,7 @@ local realCooldownCalls=BuffButton1.blkAura.cooldown.cooldownCalls
 local auraCount=0;for _ in pairs(a.auras) do auraCount=auraCount+1 end
 checkbox:SetChecked(true);checkbox:GetScript("OnClick")(checkbox)
 ok(a.testAuras and checkbox:GetChecked() and #a.auraPreviews==3,"preview creates labelled groups for player, target and focus")
-local group=a.auraPreviews[1];local sample=group.samples[1];local visual=sample.visual
+local group=a.auraPreviewFallback;local sample=group.samples[1];local visual=sample.visual
 ok(group:IsShown() and group.title:GetText():find("TEST player",1,true) and not sample.mouse,"samples are labelled and have no tooltip/mouse interaction")
 ok(not visual.cooldown:IsShown() and visual.time:GetText()=="" and not visual.edge:IsShown(),"samples respect disabled aura defaults")
 a:Set("auraSpirals",true)
@@ -101,9 +101,9 @@ a:Set("darkAuras",false);ok(not visual.skin:IsShown(),"dark edge toggle clears s
 a.db.importantSpells[21562]=true;a:Apply()
 ok(visual.edge:IsShown() and visual.edge.borderColour[2]==.8,"sample reflects selected important-spell gold border")
 a:Set("auraOffset",7)
-ok(a.auraPreviews[2].samples[1].points[1][5]==-29,"target sample gap responds live")
+ok(group.samples[1].points[1][5]==-22,"fallback does not pretend to demonstrate native gap")
 a:Set("bigBars",false)
-ok(a.auraPreviews[2].samples[1].points[1][5]==-22,"sample gap follows native large-bar prerequisite")
+ok(group.samples[1].points[1][5]==-22,"fallback appearance remains independent of frame gap")
 a:Set("bigBars",true)
 ok(BUFFS.player==originalBuff and BuffButton1.blkAura.cooldownExpiry==realExpiry and
  BuffButton1.blkAura.cooldown.cooldownCalls==realCooldownCalls,"preview leaves real aura data, expiry and cooldown calls untouched")
@@ -143,6 +143,7 @@ UNITS.player.player=true;a:Refresh();a:Set("enabled",false)
 ok(PlayerPortrait.texture=="portrait:player","addon disable restores native portrait")
 a:Set("enabled",true)
 -- #10: native state can refresh, rest suppression persists, level/vehicle/combat remain native.
+a:Set("hideResting",true)
 RESTING=true;PlayerFrame_UpdateStatus();HOOKS.PlayerFrame_UpdateStatus()
 ok(not PlayerRestIcon:IsShown() and not PlayerRestGlow:IsShown() and PlayerLevelText:IsShown(),"resting badge hidden while native level stays visible")
 PlayerAttackIcon:Show();a:Theme()

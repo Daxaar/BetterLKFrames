@@ -96,7 +96,7 @@ end
 -- Suppress only the resting badge; let Blizzard own level text, combat and vehicles.
 function addon:UpdateRestBadge()
     if not self.db then return end
-    if self.db.enabled then
+    if self.db.enabled and self.db.hideResting then
         self.restBadgeHidden=true
         if PlayerRestIcon then PlayerRestIcon:Hide() end
         if PlayerRestGlow then PlayerRestGlow:Hide() end
