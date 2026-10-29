@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.10-dev — narrower compact party frames
+
+- Refs #24: Reduce existing compact widths by exactly 20% once per saved configuration and default to 102.4×52. Keep heights and unrelated preferences unchanged; width control now permits 88–220.
+- Refs #24: Restrict the backdrop to the health/power body so the name and status header float over a transparent area. Preserve the native hit rectangle, icons, pets, positioning and compact-mode restore behaviour.
+
 ## 0.2.9-dev — party layout and aura corrections
 
 - Refs #24: Default compact frames to 128×52 with saved width/height controls. Separate name, fitted health and power rows; align status mirrors in/alongside the header and reserve safe pet spacing. Preserve native anchors that compact mode never changed.

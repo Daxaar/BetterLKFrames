@@ -4,7 +4,7 @@ BetterLKFrames = addon
 local white = "Interface\\Buttons\\WHITE8X8"
 local stock = "Interface\\TargetingFrame\\UI-StatusBar"
 local defaults = {
-    enabled = true, bigBars = true, classHealth = true, targetClassHealth = true, compactParty = false, compactWidth = 128, compactHeight = 52, hidePlayerAuraSpirals = true, classNames = true,
+    enabled = true, bigBars = true, classHealth = true, targetClassHealth = true, compactParty = false, compactWidth = 102.4, compactHeight = 52, compactWidthRevision = 1, hidePlayerAuraSpirals = true, classNames = true,
     reactionHealth = true, healthGradient = false, flatBars = false,
     darkFrames = true, darkActionBars = true, darkMinimap = true, darkTooltip = false,
     classPortraits = false, hideCombatFlash = false, hidePvp = false, hideResting = false,
@@ -39,6 +39,12 @@ local function normalize(db)
         if db.gridSize==8 then db.gridSize=32 end
         db.version=3
     end
+    -- Adopt the owner's 20% narrower compact frames once per saved configuration.
+    -- The revision travels with profile snapshots, so reloads never compound it.
+    if db.compactWidthRevision ~= 1 then
+        if type(db.compactWidth) == "number" then db.compactWidth = db.compactWidth * .8 end
+        db.compactWidthRevision = 1
+    end
     -- Preserve the former target appearance when adopting the independent switch.
     if type(db.targetClassHealth)~="boolean" then
         if type(db.classHealth)=="boolean" then db.targetClassHealth=db.classHealth
@@ -48,7 +54,7 @@ local function normalize(db)
         if type(db[k]) ~= type(v) then db[k] = copy(v) end
     end
     local ranges = {healthHeight={16,30},powerHeight={4,12},darkness={0.1,1},
-        compactWidth={110,220},compactHeight={40,80},frameScale={0.65,1.6},castScale={0.6,2},fontSize={9,16},warningSeconds={0,10},snapDistance={2,24},gridSize={8,128},auraOffset={0,12}}
+        compactWidth={88,220},compactHeight={40,80},frameScale={0.65,1.6},castScale={0.6,2},fontSize={9,16},warningSeconds={0,10},snapDistance={2,24},gridSize={8,128},auraOffset={0,12}}
     for k, r in pairs(ranges) do
         if db[k] ~= db[k] then db[k] = defaults[k] end
         db[k] = math.max(r[1], math.min(r[2], db[k]))

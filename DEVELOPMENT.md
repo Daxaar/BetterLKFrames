@@ -1,3 +1,9 @@
+## Owner-requested refinement: 0.2.10-dev (Refs #24)
+
+The owner requested 20% narrower compact party frames and a transparent name header in chat. Saved compact widths migrate by ×0.8 once per configuration using a profile-persisted revision; new defaults are 102.4×52 and the width lower bound is 88. Heights, other preferences and native party/pet hit areas are preserved. The backdrop anchors start 14 UI units below the owner top, leaving name/status space transparent. The installed 0.2.9-dev source is the base for this refinement; earlier pending acceptance work stays included. No stable release or main merge is requested.
+
+Client acceptance: reload outside combat, check the narrower body and floating name, readability/status markers, pets, width/height controls, reload/profile stability and switching compact mode off. Mock tests cannot prove actual rendering or taint freedom.
+
 # Development testing and integration tracking
 
 ## Current authorised round: 0.2.9-dev (Refs #23, #24, #26, #27)

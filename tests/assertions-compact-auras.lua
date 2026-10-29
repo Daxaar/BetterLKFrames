@@ -101,18 +101,18 @@ a.frames.PartyMemberFrame1=nil
 a:Set("compactParty",true)
 for i=1,4 do
  local owner=_G["PartyMemberFrame"..i];local e=a.frames["PartyMemberFrame"..i];local pet=_G["PartyMemberFrame"..i.."PetFrame"]
- ok(owner:GetWidth()==128 and owner:GetHeight()==52 and e.portrait:GetAlpha()==0,"#24 member "..i.." becomes portrait-free rectangle")
+ ok(near(owner:GetWidth(),102.4) and owner:GetHeight()==52 and e.portrait:GetAlpha()==0,"#24 member "..i.." becomes portrait-free rectangle")
  ok(owner:GetScript("OnClick")==secureClick and owner.attributes.unit=="party"..i and owner:GetParent()==UIParent,"#24 member "..i.." keeps native secure identity/clicks/parent")
  local left,right=owner:GetHitRectInsets();ok(left==0 and right==0,"#24 full rectangle remains clickable "..i)
  ok(e.compactName:IsShown() and e.health:GetHeight()==26 and e.power:GetHeight()==11,"#24 member "..i.." retains name/health/resource")
- ok(pet:GetParent()==owner and pet:GetHeight()==31 and pet:GetWidth()==116 and pet:GetScript("OnClick")==secureClick,"#24 pet "..i.." retains native parent/interaction and reserves space for taller body")
+ ok(pet:GetParent()==owner and pet:GetHeight()==31 and near(pet:GetWidth(),90.4) and pet:GetScript("OnClick")==secureClick,"#24 pet "..i.." retains native parent/interaction and reserves space for taller body")
  local v;for _,child in ipairs(pet.children) do if child.unit=="partypet"..i then v=child end end
  ok(v and v:GetValue()==50 and v.name:GetText():find("50%%"),"#24 pet "..i.." shows health and identity")
  local d=_G["PartyMemberFrame"..i.."Debuff1"]
  local _,relative,_,x=d:GetPoint(1)
- ok(relative==owner and x==132 and d:GetScript("OnEnter")==secureClick,"#24 native debuff indicators/tooltips remain beside member "..i)
+ ok(relative==owner and near(x,106.4) and d:GetScript("OnEnter")==secureClick,"#24 native debuff indicators/tooltips remain beside member "..i)
  local _,_,_,cx,cy=a.castbars[i]:GetPoint(1)
- ok(cx==132 and cy==-35,"#24 cast bar remains usable beside member "..i)
+ ok(near(cx,106.4) and cy==-35,"#24 cast bar remains usable beside member "..i)
 end
 ok(a.frames.PetFrame.compact and PetFrame:GetParent()==UIParent,"#24 owner's pet is restyled without duplicate player/party button")
 for size=0,4 do

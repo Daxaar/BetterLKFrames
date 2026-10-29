@@ -47,7 +47,7 @@ ok(leader:GetAlpha()==0 and mirror:IsShown() and mirror:GetTexture()=="leader","
 leader:Hide();role:Show();a:Refresh()
 ok(not mirror:IsShown(),"#24 native status visibility updates mirror immediately")
 -- Changing sizes must preserve text fit, pets, native parents and compact toggle restore.
-for _,size in ipairs({{110,40},{128,52},{220,80}}) do
+for _,size in ipairs({{88,40},{102.4,52},{110,40},{128,52},{220,80}}) do
  a:Set("compactWidth",size[1]);a:Set("compactHeight",size[2]);a:Refresh()
  ok(PartyMemberFrame1:GetWidth()==size[1] and PartyMemberFrame1:GetHeight()==size[2],"#24 profile dimensions apply: "..size[1].."x"..size[2])
  local pet=PartyMemberFrame1PetFrame;pet:Show()
@@ -62,7 +62,7 @@ end
 pal.hp=9999999;pal.maxhp=9999999;a:Set("compactWidth",110);a:Refresh()
 ok(not e.health.text:GetText():find("%.%.%.") and e.health.text:GetStringWidth()<=104,"#24 large values use short format instead of ellipsis")
 a:Set("compactWidth",10);a:Set("compactHeight",999)
-ok(a.db.compactWidth==110 and a.db.compactHeight==80,"#24 controls enforce supported dimension bounds")
+ok(a.db.compactWidth==88 and a.db.compactHeight==80,"#24 controls enforce supported dimension bounds")
 a:Profile("save","Sized party","character");a:Set("compactWidth",166);a:Set("compactHeight",60);a:InitSettings();a:Apply()
 ok(a.db.compactWidth==166 and a.db.compactHeight==60,"#24 dimensions persist in private profile across reinitialization")
 -- Only restore anchors that we actually changed: do not undo native pet/owner updates.
@@ -109,3 +109,38 @@ ok(main.mainTrim.allPoints==BuffButton1 and main.mainTrim:GetNumPoints()==0,"#23
 a:Set("enabled",false);a:UpdateAuras()
 ok(main.nativeDuration:GetAlpha()==1,"#23 disabling addon restores main native durations")
 print("TOTAL 0.2.9 "..n.." assertions passed")
+-- Owner refinement: proportional migration must be exact, stable and profile-local.
+local old={compactWidth=128,compactHeight=52,frameScale=1.25,positions={party={x=18,y=-70}}}
+local migrated=a.Normalize(old)
+ok(near(migrated.compactWidth,102.4) and migrated.compactHeight==52,"#24 old width shrinks by 20 percent without changing height")
+ok(migrated.frameScale==1.25 and migrated.positions.party.x==18,"#24 migration preserves scale and positions")
+for i=1,3 do migrated=a.Normalize(migrated) end
+ok(near(migrated.compactWidth,102.4),"#24 normalization never repeatedly shrinks a migrated width")
+local fresh=a.Normalize({})
+ok(near(fresh.compactWidth,102.4) and fresh.compactHeight==52,"#24 fresh settings use narrower width and original height")
+for _,width in ipairs({110,146,220}) do
+ local profile=a.Normalize({compactWidth=width,compactHeight=60})
+ ok(near(profile.compactWidth,width*.8) and profile.compactHeight==60,"#24 custom saved widths migrate proportionally: "..width)
+end
+BetterLKFramesDB=nil;BetterLKFramesCharDB=nil;a:InitSettings();a:Set("compactParty",true);a:Apply();a:Refresh()
+local entry=a.frames.PartyMemberFrame1
+local top,ref,relative,px,py=entry.compactPanel:GetPoint(1)
+local bottom,bref,brelative,bx,by=entry.compactPanel:GetPoint(2)
+ok(top=="TOPLEFT" and ref==PartyMemberFrame1 and relative=="TOPLEFT" and px==0 and py==-14,"#24 backdrop begins below transparent floating name header")
+ok(bottom=="BOTTOMRIGHT" and bref==PartyMemberFrame1 and bx==0 and by==0,"#24 backdrop still covers health and power body")
+ok(entry.compactName:GetPoint(1)=="TOPLEFT" and entry.compactName:IsShown(),"#24 name remains visible above body")
+ok(near(PartyMemberFrame1:GetWidth(),102.4) and PartyMemberFrame1:GetHeight()==52,"#24 actual compact frame uses narrower geometry at unchanged height")
+a:Set("compactParty",false)
+ok(not entry.compactPanel:IsShown() and not entry.compactName:IsShown(),"#24 disabling compact mode hides floating name and body backdrop")
+print("TOTAL owner refinements completed")
+
+BetterLKFramesDB={profiles={Legacy={compactWidth=146,compactHeight=60}}}
+BetterLKFramesCharDB={profiles={Private={compactWidth=220,compactHeight=48}},activeProfile={scope="account",name="Legacy"}}
+a:InitSettings()
+ok(near(a.db.compactWidth,116.8) and a.db.compactHeight==60,"#24 saved account profile migrates without reset")
+a:CommitSettings();a:InitSettings()
+ok(near(a.db.compactWidth,116.8),"#24 saved account profile width survives reinitialization without a second reduction")
+BetterLKFramesCharDB.activeProfile={scope="character",name="Private"};a:InitSettings()
+ok(near(a.db.compactWidth,176) and a.db.compactHeight==48,"#24 independent character profile migrates proportionally")
+a:CommitSettings();a:InitSettings()
+ok(near(a.db.compactWidth,176),"#24 character profile retains migrated width after reinitialization")

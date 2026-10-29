@@ -63,10 +63,14 @@ local function member(e,name)
     compactArt(name,owner);hide(e.name);hide(e.portrait)
     if not e.compactPanel then
         local f=CreateFrame("Frame",nil,owner);e.compactPanel=f;f:EnableMouse(false)
-        f:SetFrameLevel(owner:GetFrameLevel()+5);f:SetAllPoints(owner)
+        f:SetFrameLevel(owner:GetFrameLevel()+5)
         f:SetBackdrop({bgFile=white,edgeFile=white,edgeSize=1})
         f:SetBackdropColor(.025,.025,.025,1);f:SetBackdropBorderColor(0,0,0,1)
     end
+    -- Back only the bar body: the name/status header floats over the world.
+    e.compactPanel:ClearAllPoints()
+    e.compactPanel:SetPoint("TOPLEFT",owner,"TOPLEFT",0,-14)
+    e.compactPanel:SetPoint("BOTTOMRIGHT",owner,"BOTTOMRIGHT",0,0)
     e.compactPanel:Show()
     place(e.health,owner,"TOPLEFT",0,-14,w,h-26)
     remember(e.health.text,true);e.health.text:ClearAllPoints();e.health.text:SetPoint("CENTER",e.health,"CENTER",0,0)
