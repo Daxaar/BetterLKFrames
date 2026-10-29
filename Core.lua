@@ -4,7 +4,7 @@ BetterLKFrames = addon
 local white = "Interface\\Buttons\\WHITE8X8"
 local stock = "Interface\\TargetingFrame\\UI-StatusBar"
 local defaults = {
-    enabled = true, bigBars = true, classHealth = true, targetClassHealth = true, compactParty = false, hidePlayerAuraSpirals = true, classNames = true,
+    enabled = true, bigBars = true, classHealth = true, targetClassHealth = true, compactParty = false, compactWidth = 128, compactHeight = 52, hidePlayerAuraSpirals = true, classNames = true,
     reactionHealth = true, healthGradient = false, flatBars = false,
     darkFrames = true, darkActionBars = true, darkMinimap = true, darkTooltip = false,
     classPortraits = false, hideCombatFlash = false, hidePvp = false, hideResting = false,
@@ -48,7 +48,7 @@ local function normalize(db)
         if type(db[k]) ~= type(v) then db[k] = copy(v) end
     end
     local ranges = {healthHeight={16,30},powerHeight={4,12},darkness={0.1,1},
-        frameScale={0.65,1.6},castScale={0.6,2},fontSize={9,16},warningSeconds={0,10},snapDistance={2,24},gridSize={8,128},auraOffset={0,12}}
+        compactWidth={110,220},compactHeight={40,80},frameScale={0.65,1.6},castScale={0.6,2},fontSize={9,16},warningSeconds={0,10},snapDistance={2,24},gridSize={8,128},auraOffset={0,12}}
     for k, r in pairs(ranges) do
         if db[k] ~= db[k] then db[k] = defaults[k] end
         db[k] = math.max(r[1], math.min(r[2], db[k]))
@@ -149,6 +149,7 @@ local function paint(entry)
     portrait(entry)
     rememberAlpha(entry.flash,addon.db.hideCombatFlash)
     rememberAlpha(entry.pvp,addon.db.hidePvp)
+    if entry.compact and addon.PaintCompactMember then addon:PaintCompactMember(entry,u) end
 end
 function addon:Refresh()
     for _, entry in pairs(self.frames) do paint(entry) end
@@ -434,6 +435,7 @@ function addon:SetupCasts()
             f:SetPoint("TOPLEFT",owner,"BOTTOMLEFT",14,1);f:SetWidth(105);f:SetHeight(12)
             f.name=text(f,9);f.time=text(f,9);f.name:ClearAllPoints();f.name:SetPoint("LEFT",f,"LEFT",2,0);f.name:SetWidth(75);f.name:SetJustifyH("LEFT")
             f.time:ClearAllPoints();f.time:SetPoint("RIGHT",f,"RIGHT",-2,0);f.unit="party"..i;f:Hide();self.castbars[i]=f
+            f:SetScript("OnUpdate",function(bar) addon:AnimatePartyCast(bar) end)
         end
     end
 end
@@ -455,11 +457,12 @@ function addon:UpdateCasts()
     for _,f in pairs(self.castbars) do
         local n,icon,start,finish,channel,blocked=castInfo(f.unit)
         if self.db.enabled and self.db.partyCastbars and n and UnitExists(f.unit) then
+            f.blkClock={start=start,finish=finish,channel=channel}
             f:SetMinMaxValues(0,math.max(0.01,finish-start));f:SetValue(channel and math.max(0,finish-GetTime()) or math.max(0,GetTime()-start))
             if blocked then f:SetStatusBarColor(0.5,0.5,0.5)
             elseif channel then f:SetStatusBarColor(0.3,0.65,1) else f:SetStatusBarColor(1,0.75,0.15) end
             f.name:SetText(n);f.time:SetText(string.format("%.1f",math.max(0,finish-GetTime())));f:Show()
-        else f:Hide() end
+        else f.blkClock=nil;f:Hide() end
     end
 end
 local function auraButton(button,unit,index,debuff,mainPlayer)
@@ -499,7 +502,7 @@ function addon:RefreshAuraCounterOwner()
     if self.db then
         if loaded then
             for _,f in pairs(self.auras) do
-                f.time:SetText("");rememberAlpha(f.nativeDuration,false)
+                f.time:SetText("");rememberAlpha(f.nativeDuration,self.db.enabled and f.mainPlayerAura and true or false)
             end
         end
         self:UpdateAuras()
@@ -513,7 +516,7 @@ function addon:PaintAura(button,f,n,duration,expiry,spellId,important)
     if addon.SkinAura then addon:SkinAura(button,f) end
     if addon.ManagePlayerAuraSpiral then addon:ManagePlayerAuraSpiral(f) end
     local ownTimers=db.auraTimers and not self:HasOmniCC()
-    rememberAlpha(f.nativeDuration,db.enabled and ownTimers)
+    rememberAlpha(f.nativeDuration,db.enabled and (ownTimers or (f.mainPlayerAura and self:HasOmniCC())))
     local remaining=expiry and expiry-GetTime() or 0
     if not db.enabled or not n then f:Hide();if f.cooldown then f.cooldown:Hide();f.cooldownExpiry=nil end;return end
     if not f:IsShown() then f:Show() end
@@ -551,7 +554,8 @@ function addon:UpdateAuras()
 end
 function addon:Command(message)
     local cmd,rest=string.match(message or "","^(%S*)%s*(.-)$");cmd=string.lower(cmd or "")
-    if cmd=="unlock" then self:SetUnlocked(true)
+    if cmd=="partydebug" then self:PartyDiagnostics()
+    elseif cmd=="unlock" then self:SetUnlocked(true)
     elseif cmd=="lock" then self:SetUnlocked(false)
     elseif cmd=="reset" then self:Reset()
     elseif cmd=="off" or cmd=="on" then self:Set("enabled",cmd=="on")
@@ -621,6 +625,8 @@ addon:SetScript("OnUpdate",function(self,dt)
             self:Refresh()
             if self.unlocked and self.UpdatePartyMover then self:UpdatePartyMover() end
             dirty=false
+        elseif self.compactPartyActive and self.RefreshCompactParty then
+            self:RefreshCompactParty() -- Native ready/leader state can change without health events.
         end
         self:UpdateCasts()
     end

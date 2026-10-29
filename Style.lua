@@ -89,7 +89,7 @@ function addon:SkinAura(button,f)
     if f.mainPlayerAura then
         if not f.mainTrim and button and enabled and not InCombatLockdown() then
             local t=CreateFrame("Frame",nil,f);f.mainTrim=t;t:EnableMouse(false)
-            t:SetPoint("TOPLEFT",button,"TOPLEFT",-2,2);t:SetPoint("BOTTOMRIGHT",button,"BOTTOMRIGHT",2,-2)
+            t:SetAllPoints(button) -- One flush perimeter, without an extra padded square.
             t:SetBackdrop({edgeFile="Interface\\Buttons\\WHITE8X8",edgeSize=1})
         end
         if f.mainTrim then

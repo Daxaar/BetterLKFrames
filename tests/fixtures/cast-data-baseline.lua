@@ -16,10 +16,11 @@ function addon:UpdateCasts()
     for _,f in pairs(self.castbars) do
         local n,icon,start,finish,channel,blocked=castInfo(f.unit)
         if self.db.enabled and self.db.partyCastbars and n and UnitExists(f.unit) then
+            f.blkClock={start=start,finish=finish,channel=channel}
             f:SetMinMaxValues(0,math.max(0.01,finish-start));f:SetValue(channel and math.max(0,finish-GetTime()) or math.max(0,GetTime()-start))
             if blocked then f:SetStatusBarColor(0.5,0.5,0.5)
             elseif channel then f:SetStatusBarColor(0.3,0.65,1) else f:SetStatusBarColor(1,0.75,0.15) end
             f.name:SetText(n);f.time:SetText(string.format("%.1f",math.max(0,finish-GetTime())));f:Show()
-        else f:Hide() end
+        else f.blkClock=nil;f:Hide() end
     end
 end

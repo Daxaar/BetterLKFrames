@@ -122,7 +122,7 @@ LOADED_ADDONS.OmniCC=true;a.scripts.OnEvent(a,"ADDON_LOADED","OmniCC")
 ok(BuffButton1.blkAura.time:GetText()=="","#13 late load clears counters on hidden existing aura overlays too")
 BuffButton1:Show();a:UpdateAuras()
 ok(a:HasOmniCC() and a.db.auraTimers and a.auraTimerCheck:GetChecked(),"#13 late loaded OmniCC preserves checked saved preference")
-ok(BuffButton1.blkAura.time:GetText()=="" and BuffButton1.duration:GetAlpha()==1,"#13 existing real aura text suppressed, native duration restored")
+ok(BuffButton1.blkAura.time:GetText()=="" and BuffButton1.duration:GetAlpha()==0,"#13 existing real aura text suppressed, main native duration suppressed to prevent duplicate OmniCC labels")
 local active=pg:IsShown() and pg or fallback
 ok(active.samples[1].visual.time:GetText()=="","#13 existing preview counter suppressed immediately")
 ok(a.omniCCWarning:IsShown() and a.omniCCWarning.points[1][2]==300 and a.omniCCWarning.points[1][3]<-80,"#13 warning is below Show test auras checkbox")

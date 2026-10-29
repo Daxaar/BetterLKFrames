@@ -264,6 +264,7 @@ function methods:Enable() self.enabled=true end
 function methods:Disable() self.enabled=false end
 function methods:SetDisabledFontObject(obj) self.disabledFont=obj end
 function methods:GetTextWidth() return #self:GetText()*6 end
+function methods:GetStringWidth() return #self:GetText()*5 end
 function methods:IsOwned() return false end
 function methods:Raise() self.raised=true end
 GameFontHighlightSmall="GameFontHighlightSmall"

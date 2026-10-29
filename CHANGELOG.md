@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.9-dev — party layout and aura corrections
+
+- Refs #24: Default compact frames to 128×52 with saved width/height controls. Separate name, fitted health and power rows; align status mirrors in/alongside the header and reserve safe pet spacing. Preserve native anchors that compact mode never changed.
+- Refs #24: Interpolate party cast/channel progress every rendered frame from cached timing, retaining the existing cast-detection cadence and data API.
+- Refs #23: Make main aura trim flush instead of padded, and suppress the competing main Blizzard duration line when OmniCC owns countdowns. Target/focus timers and spirals retain independent behavior.
+- Refs #26: Show BetterLKFrames 3.3.5a in the AddOns list, preserving internal names and SavedVariables.
+- Refs #27: Record intermittent missing-frame report; owner reports normal visibility after relog. Add read-only /bf partydebug and join-event-order checks. No confirmed visibility root cause or fix is claimed.
+- Add 42 focused regressions; client acceptance remains outstanding.
+
 ## 0.2.8-dev — target colours, main auras and compact party frames
 
 - Refs #16: Replace inherited tab OnShow sizing with explicit label/cap sizing on show and selection; retain consistent adjacent edge gaps.

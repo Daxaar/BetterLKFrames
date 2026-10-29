@@ -12,7 +12,7 @@ This is an iterative client-test release, not complete BetterBlizzFrames parity.
 | Buff/debuff borders | Implemented for player/target/focus aura buttons and weapon enchant edges; native type/alert signals retained |
 | Snap movement / guides | Implemented: edges, centres, mirrored pair, screen centre/edges, visible screen-centred counted grid, optional grid-centre snapping and Shift bypass; snapping on release |
 | Standard window rims | Added: recognized native quest/spellbook/character/talent/map/bag rims and shared frame pieces; native Character/Spellbook atlas trim coordinates; partial decorative coverage, not every header/tab/window |
-| Compact party presentation | Optional native secure party/pet restyling, portrait-free health/name/resource rectangles; pets and native debuff/hover-buff interactions retained; no raid restyling |
+| Compact party presentation | Optional native secure party/pet restyling, portrait-free health/name/resource rows with per-profile width/height; aligned status mirrors; pets and native debuff/hover-buff interactions retained; no raid restyling |
 | Main player auras | Optional suppression of top-right spiral models, preserving timing data/text; thin dark outer trim respects aura-theme toggle and native dispel colours |
 | Settings window decoration | Blizzard dialog border; button/checkbox/slider trim follows window dark-mode brightness |
 | Frame scaling/moving | Implemented outside combat, saved positions, lock and restore; party group uses one solo-visible placement preview, applies on release and retains pet-aware chaining. One all-unit scale includes party frames |
@@ -21,7 +21,7 @@ This is an iterative client-test release, not complete BetterBlizzFrames parity.
 | Flat bars, health/power labels | Implemented; health includes percentage, numeric values compact above 10k |
 | Hide PvP icons / combat flash | Implemented for registered unit frames; does not hide every combat-related UI element |
 | Cast timers and scale | Implemented for native player/pet/target/focus cast bars |
-| Party cast bars | Implemented using locally visible legacy cast/channel data |
+| Party cast bars | Legacy cast/channel data capture with per-render-frame interpolation; no extra per-frame cast queries |
 | Aura countdown / important border | Implemented on native player/target/focus aura buttons, with optional live visual-only samples |
 | Aura expiry warning | Implemented; configurable 0–10 seconds, not pandemic semantics |
 | Aura cooldown spirals | Adds missing spirals; preserves native spirals |
