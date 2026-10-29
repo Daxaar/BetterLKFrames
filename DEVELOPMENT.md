@@ -1,6 +1,23 @@
 # Development testing and integration tracking
 
-## Current authorised round: 0.2.9-dev (Refs #23, #24, #26, #27)
+## Current authorised round: 0.2.10-dev (Refs #29)
+
+Owner authorised all actionable board work on 29 October 2026 and explicitly approved tickets awaiting approval. Board review found #29 as the only new implementable item: it was approved/in-progress (priority:medium). #27 remains an unresolved critical report awaiting recurrence evidence; there are no new diagnostic facts to justify a visibility patch. Other open tickets are Ready for Testing with no newer correction feedback. Broad development authorisation does not constitute their acceptance or authorise merging/releasing.
+
+#29 feasibility: original MainMenuBar.xml and BonusActionBarFrame.xml define decorative textures independently of protected buttons and XP/reputation status widgets. Hide only MainMenuBarTexture0..3, MainMenuBarLeftEndCap, MainMenuBarRightEndCap and BonusActionBarTexture0..1. The bonus backdrop is the matching alternate main-bar decoration. Do not touch sliding pet art, stance/shapeshift/possess backgrounds, vehicle UI, secondary bars, XP/reputation/max-level art, buttons, icons, labels, cooldowns, controls or bar frames.
+
+Implementation: unchecked hideMainBarArt checkbox on Appearance, saved via the existing profile system. A bounded texture whitelist and secure SetAlpha post-hooks suppress decorative opacity while preserving Blizzard's shown state and texture changes. Track the latest externally requested alpha, including zero, and restore it when off/disabled/profile-switched. Never call Show/Hide on native bars/art, alter secure attributes, reanchor or replace native textures. Existing darkActionBars tint remains independent and correct on restoration. Option changes defer until combat ends; previously active suppression can maintain texture opacity through native updates without any protected frame geometry. Late textures are discovered by the existing theme pass outside combat. Addons replacing the entire main bar with different unnamed art are outside this native whitelist.
+
+Validation: 695 Lua 5.1 mocked assertions, including 34 new artwork checks plus the prior blocker suite's new boolean-preference check. Coverage: all eight decorative textures, unchanged functional/secondary UI, callback preservation, keyring/opacity refresh, hidden-state restoration, tint interaction, combat deferral both ways, native updates during combat, both profile scopes/reinitialization, disable and late-created art. Syntax/privacy/deterministic Actions packaging remain required. No assistant in-game testing performed; native animation/state and addon-interaction acceptance still require owner checks.
+
+References: read complete #29 body/comments and current screenshot folder; tests/screenshots/29/ is absent on issue-screenshots. Reviewed original [MainMenuBar.xml](https://github.com/wowgaming/3.3.5-interface-files/blob/main/MainMenuBar.xml), MainMenuBar.lua and [BonusActionBarFrame.xml](https://github.com/wowgaming/3.3.5-interface-files/blob/main/BonusActionBarFrame.xml). Research remains outside Git/artifacts.
+
+Owner testing: enable Hide main action-bar artwork on Appearance; verify the background/end caps disappear while buttons/bindings/tooltips/cooldowns/paging and XP/reputation remain usable. Test dark tint on/off, option off, addon disable, account/private profiles, reload/relog, combat changes and stance/pet/possess/vehicle transitions; make sure Blizzard-hidden art is not forced visible on restore. Continue testing earlier pending issues against the combined build. If #27 recurs, retain /bf partydebug output before relog/reset.
+
+Integration: branch based on issues/23-24-26-27-followups (PR #28), already stacked on #25/#21/#18. New PR targets that immediate parent to isolate #29. Keep all earlier acceptance groups open/unmerged pending explicit owner acceptance or a split. #27 remains Changes Requested with no confirmed root cause/fix. No main merge, issue closure, release/tag or deployment is authorised. DEVELOPMENT.json records exact source and cumulative issue IDs. Older notes below are historical.
+
+
+## Historical round: 0.2.9-dev (Refs #23, #24, #26, #27)
 
 Owner authorised #26 approval, reconciliation of correction tickets and this round on 29 October 2026, explicitly prioritising a new missing-party-frames report first. #27 was created approved/in-progress with priority:critical; #23/#24 were reconciled from stale Ready for Testing cards to Changes Requested before development, both priority:medium. #26 was approved/Ready, priority:low. Earlier acceptance decisions remain unchanged.
 

@@ -6,7 +6,7 @@ local stock = "Interface\\TargetingFrame\\UI-StatusBar"
 local defaults = {
     enabled = true, bigBars = true, classHealth = true, targetClassHealth = true, compactParty = false, compactWidth = 128, compactHeight = 52, hidePlayerAuraSpirals = true, classNames = true,
     reactionHealth = true, healthGradient = false, flatBars = false,
-    darkFrames = true, darkActionBars = true, darkMinimap = true, darkTooltip = false,
+    darkFrames = true, darkActionBars = true, hideMainBarArt = false, darkMinimap = true, darkTooltip = false,
     classPortraits = false, hideCombatFlash = false, hidePvp = false, hideResting = false,
     healthText = true, powerText = true, castTimers = true, partyCastbars = true,
     auraTimers = false, auraSpirals = false, auraWarnings = false,
@@ -207,6 +207,7 @@ function addon:Theme()
         tint(_G["Boss"..i.."TargetFrameTextureFrameTexture"],self.db.enabled and self.db.darkFrames)
     end
     for _, n in ipairs(actionDecor) do tint(_G[n],self.db.enabled and self.db.darkActionBars) end
+    if self.ThemeMainBarArt then self:ThemeMainBarArt() end
     if self.ThemeButtons then self:ThemeButtons() end
     if self.ThemeWindows then self:ThemeWindows() end
     if self.ThemeOptions then self:ThemeOptions() end

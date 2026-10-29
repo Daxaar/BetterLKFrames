@@ -4,7 +4,7 @@ Project: https://github.com/Daxaar/BetterLKFrames
 
 Blizzard unit-frame styling for the original **World of Warcraft 3.3.5a client, build 12340** (Interface 30300).
 
-Version **0.2.9-dev** is a development build awaiting client acceptance. It provides larger rounded health bars, class colours, dark decoration, movement/alignment tools and legacy-compatible cast/aura enhancements. It is an original implementation inspired by BetterBlizzFrames feature ideas, not an official port or a copy of that project's code/artwork. No server module is required. The in-game AddOns display title is **BetterLKFrames 3.3.5a**; its internal addon/folder name stays BetterLKFrames.
+Version **0.2.10-dev** is a development build awaiting client acceptance. It provides larger rounded health bars, class colours, dark decoration, movement/alignment tools and legacy-compatible cast/aura enhancements. It is an original implementation inspired by BetterBlizzFrames feature ideas, not an official port or a copy of that project's code/artwork. No server module is required. The in-game AddOns display title is **BetterLKFrames 3.3.5a**; its internal addon/folder name stays BetterLKFrames.
 
 ## Features
 
@@ -32,6 +32,8 @@ For a source checkout, use the package instructions in [CONTRIBUTING.md](CONTRIB
 Disable any previous version under a different addon name before enabling BetterLKFrames. The addon uses `BetterLKFramesDB` and `BetterLKFramesCharDB` saved variables; it does not import GromitFrames saved settings.
 
 For an intermittent missing party-frame report, run **`/bf partydebug`** before relogging/resetting and retain its local read-only output. It reports the active profile, party/raid state and native/overlay geometry and visibility.
+
+**Hide main action-bar artwork** on Appearance is unchecked by default. It hides the main background panels, gryphon/end caps and matching bonus-bar backdrop. Buttons, XP/reputation displays, pet/stance/possess controls and vehicle UI remain functional and visible according to Blizzard’s own state. Turning it off restores the native-requested opacity with your selected dark/default tint. Changes wait until combat ends.
 
 ## Movement and settings
 

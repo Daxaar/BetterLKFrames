@@ -6,6 +6,7 @@ This is an iterative client-test release, not complete BetterBlizzFrames parity.
 | --- | --- |
 | Thicker health bars | Implemented: player/target/focus, configurable heights; secondary bars retain native height |
 | Class health colours | Independent target switch; other units retain existing setting. Identified PCs only; NPC reaction/gradient fallback |
+| Main action-bar artwork | Optional removal of main/bonus decorative panels and end caps; buttons, XP/reputation, pet/stance/possess/vehicle controls unchanged; reversible per profile |
 | Dark decoration | Implemented for named unit-frame/action-bar/minimap/cast-bar art; optional tooltip backdrop |
 | Rounded gradient bars / names above | Implemented for large player/target/focus bars; independent toggles, flat fill optional |
 | Individual button borders | Implemented for main/extra/side action bars, pet/stance buttons, bags and legacy menu buttons; icons stay untinted |

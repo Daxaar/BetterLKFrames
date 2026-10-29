@@ -35,6 +35,7 @@
 !/tests/assertions-party-windows.lua
 !/tests/assertions-compact-auras.lua
 !/tests/assertions-029.lua
+!/tests/assertions-action-art.lua
 !/tests/run-tests.py
 !/tests/verify-package.py
 !/tests/fixtures/

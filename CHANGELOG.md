@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.10-dev — optional main action-bar artwork removal
+
+- Refs #29: Add unchecked Hide main action-bar artwork option on Appearance. Suppress only native main/bonus background panels and end caps; preserve buttons, XP/reputation and pet/stance/possess/vehicle controls.
+- Restore native-requested opacity and selected tint without forcing visibility; defer option changes in combat. Preserve profile choices across reload.
+- Add 34 focused regressions. Earlier pending work remains included; #27 still awaits recurrence evidence. No in-game testing claimed.
+
 ## 0.2.9-dev — party layout and aura corrections
 
 - Refs #24: Default compact frames to 128×52 with saved width/height controls. Separate name, fitted health and power rows; align status mirrors in/alongside the header and reserve safe pet spacing. Preserve native anchors that compact mode never changed.

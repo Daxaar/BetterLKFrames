@@ -106,6 +106,7 @@ function addon:BuildOptions()
     end
     check(appearance,"targetClassHealth","Colour target health bar by class",0,-290)
     check(appearance,"compactParty","Use compact party frames",300,-290)
+    check(appearance,"hideMainBarArt","Hide main action-bar artwork",300,-325)
     slider(appearance,"darkness","Decoration brightness",10,-325,0.1,1,0.05,"%.2f")
     label(appearance,"Lower brightness is darker. Portraits, icons and bar colours stay untinted.",0,-385,11)
     label(appearance,"Target class colour is independent of the class-colour option for other units.",0,-410,11)

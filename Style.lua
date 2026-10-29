@@ -147,3 +147,38 @@ end
 if type(PlayerFrame_UpdateStatus)=="function" then
     hooksecurefunc("PlayerFrame_UpdateStatus",function() addon:UpdateRestBadge() end)
 end
+
+-- Main/bonus bar decoration only. Never hide a protected bar frame or alter its
+-- shown state: Blizzard retains paging, XP/reputation and vehicle/possess logic.
+local mainArtNames={"MainMenuBarTexture0","MainMenuBarTexture1","MainMenuBarTexture2","MainMenuBarTexture3",
+    "MainMenuBarLeftEndCap","MainMenuBarRightEndCap","BonusActionBarTexture0","BonusActionBarTexture1"}
+local mainArtStates=setmetatable({}, {__mode="k"})
+local mainArtHidden=false
+function addon:ThemeMainBarArt()
+    -- Saved changes during combat take effect through the normal deferred Apply.
+    if InCombatLockdown() then return end
+    mainArtHidden=self.db.enabled and self.db.hideMainBarArt
+    for _,name in ipairs(mainArtNames) do
+        local t=_G[name]
+        if t and t.SetAlpha then
+            local s=mainArtStates[t]
+            if not s and mainArtHidden then
+                s={alpha=t:GetAlpha(),hidden=false};mainArtStates[t]=s
+                hooksecurefunc(t,"SetAlpha",function(_,alpha)
+                    if not s.setting then
+                        s.alpha=alpha
+                        if s.hidden and alpha~=0 then s.setting=true;t:SetAlpha(0);s.setting=nil end
+                    end
+                end)
+            end
+            if s then
+                if mainArtHidden then
+                    if not s.hidden then s.alpha=t:GetAlpha() end
+                    s.hidden=true;s.setting=true;t:SetAlpha(0);s.setting=nil
+                elseif s.hidden then
+                    s.hidden=false;s.setting=true;t:SetAlpha(s.alpha);s.setting=nil
+                end
+            end
+        end
+    end
+end
