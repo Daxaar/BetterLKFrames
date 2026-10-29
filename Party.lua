@@ -103,3 +103,37 @@ function addon:HidePartyMoverForCombat()
     local g=self.partyGroup
     if g then g.owner:Hide() end -- Independent preview has no protected anchors.
 end
+
+-- Detection remains on the existing 0.1s path. Interpolate the cached interval
+-- on the individual visible party bar each rendered frame (casts and channels).
+function addon:AnimatePartyCast(bar)
+    local clock=bar.blkClock
+    if not clock then return end
+    local now=GetTime()
+    if not self.db.enabled or not self.db.partyCastbars or not UnitExists(bar.unit) or now>=clock.finish then
+        bar.blkClock=nil;bar:Hide();return
+    end
+    bar:SetValue(math.max(0,clock.channel and clock.finish-now or now-clock.start))
+    bar.time:SetText(string.format("%.1f",math.max(0,clock.finish-now)))
+end
+
+-- Read-only evidence for intermittent visibility reports. No Show(), reset,
+-- secure attribute, CVar or profile mutations are performed here.
+function addon:PartyDiagnostics()
+    self:Message("Party debug: members="..tostring(GetNumPartyMembers and GetNumPartyMembers())..
+        " raid="..tostring(GetNumRaidMembers and GetNumRaidMembers())..
+        " combat="..tostring(InCombatLockdown()).." enabled="..tostring(self.db.enabled)..
+        " compact="..tostring(self.db.compactParty).." profile="..self:ActiveProfileLabel())
+    self:Message("Viewport "..UIParent:GetWidth().." x "..UIParent:GetHeight())
+    for i=1,4 do
+        local name="PartyMemberFrame"..i;local f=_G[name];local e=self.frames[name]
+        if f then
+            self:Message(name.." exists="..tostring(UnitExists("party"..i)).." shown="..tostring(f:IsShown())..
+                " visible="..tostring(f:IsVisible()).." alpha="..f:GetAlpha()..
+                " xy="..tostring(f:GetLeft())..","..tostring(f:GetBottom())..
+                " scale="..f:GetScale().." level="..f:GetFrameLevel()..
+                " overlay="..tostring(e and e.health:IsVisible()).." overlayLevel="..tostring(e and e.health:GetFrameLevel())..
+                " overlayAlpha="..tostring(e and e.health:GetAlpha()).." nativeAlpha="..tostring(e and e.originalHealth:GetAlpha()))
+        else self:Message(name.." missing") end
+    end
+end

@@ -48,3 +48,5 @@ new_issues.execute((root/'tests/mock-wow.lua').read_text())
 for f in ('Core.lua','Profiles.lua','Style.lua','Windows.lua','AuraLayout.lua','Snapping.lua','Party.lua','CompactParty.lua','Preview.lua','OptionsHost.lua','Options.lua'):
     new_issues.execute((root/f).read_text())
 new_issues.execute((root/'tests/assertions-compact-auras.lua').read_text())
+
+new_issues.execute((root/'tests/assertions-029.lua').read_text())
